@@ -179,6 +179,7 @@ defmodule Alods.Store do
   @spec validate_url(String.t) :: {:ok, String.t} | {:error, atom}
   defp validate_url(host) do
     case URI.parse(host) do
+      %{scheme: scheme} when not scheme in ["http", "https"] -> {:error, :invalid_or_missing_protocol}
       %{host: nil} -> {:error, :invalid_host}
       _ -> {:ok, host}
     end

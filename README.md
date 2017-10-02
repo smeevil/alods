@@ -44,9 +44,10 @@ be found at [https://hexdocs.pm/alods](https://hexdocs.pm/alods).
 
 ```elixir
 config :alods,
-       env: :prod,
+       start_producers_and_consumers: true,
        consumer_amount: 2,
-       check_for_work_delay: :os.seconds(1)
+       check_for_work_delay: :os.seconds(1),
+       reset_after_processing_in_seconds: 30 
 ```
 
 ## Usage
@@ -76,7 +77,7 @@ To see what is currently queued for delivery :
 ```elixir
 iex> Alods.list_queue
 [
-  %Alods.Store.Record{
+  %Alods.Queue.Record{
       data: %{foo: "bar"},
       id: "4d7ac4a9-2762-4c79-acda-66113d44c2d1",
       last_failure_reason: %{body: "Unprocessable Entity", status_code: 422},

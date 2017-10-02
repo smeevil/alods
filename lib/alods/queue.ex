@@ -1,4 +1,4 @@
-defmodule Alods.Store do
+defmodule Alods.Queue do
   @moduledoc """
     This module takes care of starting a DETS store.
   """
@@ -8,8 +8,6 @@ defmodule Alods.Store do
 
   @valid_methods [:get, :post]
   @valid_statuss [:pending, :processing]
-
-  @reset_after_processing_in_seconds 5
 
   @spec start_link :: {:ok, pid}
   def start_link do
@@ -23,7 +21,7 @@ defmodule Alods.Store do
     unless File.exists?(path), do: File.mkdir_p!(path)
     auto_save = Application.get_env(:alods, :store_auto_save_ms, :timer.seconds(60))
 
-    {:ok, reference} = :dets.open_file(__MODULE__, file: to_charlist(path <> file), auto_save: auto_save)
+    {:ok, _reference} = :dets.open_file(__MODULE__, file: to_charlist(path <> file), auto_save: auto_save)
     {:ok, nil}
   end
 
@@ -64,13 +62,13 @@ defmodule Alods.Store do
   @spec list :: list
   def list, do: GenServer.call(__MODULE__, {:list})
 
-  @spec find(String.t) :: %Alods.Store.Record{}
+  @spec find(String.t) :: %Alods.Queue.Record{}
   def find(id), do: GenServer.call(__MODULE__, {:find, id})
 
   @spec delete(String.t) :: :ok
   def delete(id), do: GenServer.call(__MODULE__, {:delete, id})
 
-  @spec retry_later(%Alods.Store.Record{}, any) :: :ok | {:error, any}
+  @spec retry_later(%Alods.Queue.Record{}, any) :: :ok | {:error, any}
   def retry_later(record, reason), do: GenServer.call(__MODULE__, {:retry_later, record.id, reason})
 
   @doc """
@@ -122,13 +120,27 @@ defmodule Alods.Store do
     {:ok, record} = find_record(id)
     IO.puts "record #{inspect record}"
     retry_at = :os.system_time(:seconds) + (2 * record.retries)
-    data = {record.id, record.method, record.url, record.data, retry_at, :pending, (record.retries + 1), reason}
+    data = {
+      record.id,
+      record.method,
+      record.url,
+      record.data,
+      retry_at,
+      :pending,
+      (record.retries + 1),
+      reason,
+      record.created_at,
+      DateTime.utc_now
+    }
     :ok = :dets.insert(__MODULE__, data)
     {:reply, {:ok, to_struct(data)}, state}
   end
 
   def handle_call({:push, id, method, url, data}, _caller, state) do
-    case :dets.insert_new(__MODULE__, {id, method, url, data, :os.system_time(:seconds), :pending, 0, nil}) do
+    case :dets.insert_new(
+           __MODULE__,
+           {id, method, url, data, :os.system_time(:seconds), :pending, 0, nil, DateTime.utc_now, nil}
+         ) do
       true -> {:reply, {:ok, id}, state}
       error -> error
     end
@@ -168,7 +180,9 @@ defmodule Alods.Store do
           :os.system_time(:seconds),
           status,
           record.retries,
-          record.last_failure_reason
+          record.last_failure_reason,
+          record.created_at,
+          record.updated_at
         }
         :ok = :dets.insert(__MODULE__, data)
         {:reply, {:ok, to_struct(data)}, state}
@@ -186,31 +200,33 @@ defmodule Alods.Store do
   end
 
   defp select_all do
-    fun do{id, method, url, data, timestamp, status, retries, reason} when id != nil ->
-      {id, method, url, data, timestamp, status, retries, reason} end
+    fun do{id, method, url, data, timestamp, status, retries, reason, created_at, updated_at} when id != nil ->
+      {id, method, url, data, timestamp, status, retries, reason, created_at, updated_at} end
   end
 
   defp select_pending_older_than_or_equal_to_now do
     now = :os.system_time(:seconds)
     fun do
-      {id, method, url, data, timestamp, status, retries, reason} when timestamp <= ^now and status == :pending ->
-        {id, method, url, data, timestamp, status, retries, reason}
+      {id, method, url, data, timestamp, status, retries, reason, created_at, updated_at}
+      when timestamp <= ^now and status == :pending ->
+        {id, method, url, data, timestamp, status, retries, reason, created_at, updated_at}
     end
   end
 
   defp select_processing_longer_than_or_equal_to_seconds(seconds) do
     time = :os.system_time(:seconds) - seconds
     fun do
-      {id, method, url, data, timestamp, status, retries, reason} when timestamp <= ^time and status == :processing ->
-        {id, method, url, data, timestamp, status, retries, reason}
+      {id, method, url, data, timestamp, status, retries, reason, created_at, updated_at}
+      when timestamp <= ^time and status == :processing ->
+        {id, method, url, data, timestamp, status, retries, reason, created_at, updated_at}
     end
   end
 
   defp update_status(id, status) when status in @valid_statuss,
        do: GenServer.call(__MODULE__, {:update_status, id, status})
 
-  defp to_struct({id, method, url, data, timestamp, status, retries, reason}) do
-    %Alods.Store.Record{
+  defp to_struct({id, method, url, data, timestamp, status, retries, reason, created_at, updated_at}) do
+    %Alods.Queue.Record{
       id: id,
       method: method,
       url: url,
@@ -218,7 +234,9 @@ defmodule Alods.Store do
       timestamp: timestamp,
       status: status,
       retries: retries,
-      last_failure_reason: reason
+      last_failure_reason: reason,
+      created_at: created_at,
+      updated_at: updated_at
     }
   end
 
@@ -230,8 +248,9 @@ defmodule Alods.Store do
   end
 
   defp reset_entries_stuck_in_processing do
+    seconds = Application.get_env(:alods, :reset_after_processing_in_seconds, 60)
     __MODULE__
-    |> :dets.select(select_processing_longer_than_or_equal_to_seconds(@reset_after_processing_in_seconds))
+    |> :dets.select(select_processing_longer_than_or_equal_to_seconds(seconds))
     |> Enum.map(&to_struct/1)
     |> Enum.each(&(update_status(&1.id, :pending)))
   end

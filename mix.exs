@@ -56,7 +56,7 @@ defmodule Alods.Mixfile do
     [
       {:cortex, ">= 0.0.0", only: [:dev, :test]},
       {:credo, ">= 0.0.0", only: [:dev]},
-      {:dialyxir, ">= 0.0.0"},
+      {:dialyxir, ">= 0.0.0", only: [:dev]},
       {:ecto, ">= 0.0.0"},
       {:ex2ms, ">= 0.0.0"},
       {:excoveralls, ">= 0.0.0", only: [:test]},

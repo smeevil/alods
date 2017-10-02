@@ -22,8 +22,9 @@ defmodule Alods.Consumer do
 
   defp process(%Alods.Store.Record{method: :get} = record) do
     IO.puts "processing GET record #{inspect record}"
+    uri = URI.parse(record.url)
 
-    record.url <> "?" <> URI.encode_query(record.data)
+    (uri.scheme || "http") <> "://" <> uri.host <> (uri.path || "/") <> "?" <> URI.encode_query(record.data)
     |> HTTPoison.get
     |> handle_response(record)
   end

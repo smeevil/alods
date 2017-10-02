@@ -22,9 +22,11 @@ defmodule Alods.Consumer do
 
   defp process(%Alods.Store.Record{method: :get} = record) do
     IO.puts "processing GET record #{inspect record}"
-    uri = URI.parse(record.url)
 
-    (uri.scheme || "http") <> "://" <> uri.host <> (uri.path || "/") <> "?" <> URI.encode_query(record.data)
+    record.url
+    |> construct_url
+    |> Kernel.<>("?")
+    |> Kernel.<>(URI.encode_query(record.data))
     |> HTTPoison.get
     |> handle_response(record)
   end
@@ -34,6 +36,7 @@ defmodule Alods.Consumer do
     data = Poison.encode!(record.data)
 
     record.url
+    |> construct_url
     |> HTTPoison.post(data, [{"Content-Type", "application/json; charset=utf-8"}])
     |> handle_response(record)
   end
@@ -43,4 +46,9 @@ defmodule Alods.Consumer do
        do: Alods.Store.retry_later(record, %{status_code: response.status_code, body: response.body})
   defp handle_response(error, record), do: Alods.Store.retry_later(record, error)
 
+
+  defp construct_url(url) do
+    uri = URI.parse(url)
+    (uri.scheme || "http") <> "://" <> uri.host <> (uri.path || "/")
+  end
 end

@@ -26,5 +26,4 @@ defmodule Alods.Producer do
         wait_for_work()
     end
   end
-
 end

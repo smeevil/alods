@@ -7,7 +7,7 @@ defmodule Alods.Queue do
   import Ex2ms
 
   @valid_methods [:get, :post]
-  @valid_statuss [:pending, :processing]
+  @valid_statuses [:pending, :processing]
 
   @spec start_link :: {:ok, pid}
   def start_link do
@@ -15,9 +15,14 @@ defmodule Alods.Queue do
   end
 
   def init(_options) do
+    env = Application.get_env(:alods, :env)
+    if env == nil do
+      raise("Please make sure you define alods env in your config/dev.exs with `config :alods, env: :dev` for example")
+    end
+
     Process.flag(:trap_exit, true)
     path = File.cwd! <> "/priv"
-    file = "/alods_store_#{Application.get_env(:alods, :env)}.ets"
+    file = "/alods_store_#{env}.ets"
     unless File.exists?(path), do: File.mkdir_p!(path)
     auto_save = Application.get_env(:alods, :store_auto_save_ms, :timer.seconds(60))
 
@@ -79,8 +84,8 @@ defmodule Alods.Queue do
   def push(method, url, data)
       when method in @valid_methods and is_map(data) do
 
-    case validate_url(url) do
-      {:ok, _} -> GenServer.call(__MODULE__, {:push, Ecto.UUID.generate(), method, url, data})
+    case Alods.Queue.Record.create(%{method: method, url: url, data: data}) do
+      {:ok, record} -> GenServer.call(__MODULE__, {:push, record})
       error -> error
     end
   end
@@ -99,7 +104,7 @@ defmodule Alods.Queue do
 
     get_pending_entries()
     |> Enum.map(
-         fn entry -> case update_status(entry.id, :processing) do
+         fn entry -> case update_status(entry, :processing) do
                        {:ok, record} -> record
                        _ -> nil
                      end
@@ -111,7 +116,6 @@ defmodule Alods.Queue do
   def handle_call({:list}, _caller, state) do
     records = __MODULE__
               |> :dets.select(select_all())
-              |> Enum.map(&to_struct/1)
 
     {:reply, records, state}
   end
@@ -119,29 +123,21 @@ defmodule Alods.Queue do
   def handle_call({:retry_later, id, reason}, _caller, state) do
     {:ok, record} = find_record(id)
     IO.puts "record #{inspect record}"
-    retry_at = :os.system_time(:seconds) + (2 * record.retries)
-    data = {
-      record.id,
-      record.method,
-      record.url,
-      record.data,
-      retry_at,
-      :pending,
-      (record.retries + 1),
-      reason,
-      record.created_at,
-      DateTime.utc_now
-    }
-    :ok = :dets.insert(__MODULE__, data)
-    {:reply, {:ok, to_struct(data)}, state}
+    delay = (2 * record.retries)
+    delay = if delay > 3600, do: 3600, else: delay
+    retry_at = :os.system_time(:seconds) + delay
+
+    record = Alods.Queue.Record.update!(
+      record,
+      %{timestamp: retry_at, status: :pending, retries: (record.retries + 1), reason: reason}
+    )
+    :ok = :dets.insert(__MODULE__, {record.id, record})
+    {:reply, {:ok, record.id}, state}
   end
 
-  def handle_call({:push, id, method, url, data}, _caller, state) do
-    case :dets.insert_new(
-           __MODULE__,
-           {id, method, url, data, :os.system_time(:seconds), :pending, 0, nil, DateTime.utc_now, nil}
-         ) do
-      true -> {:reply, {:ok, id}, state}
+  def handle_call({:push, %Alods.Queue.Record{} = record}, _caller, state) do
+    case :dets.insert_new(__MODULE__, {record.id, record}) do
+      true -> {:reply, {:ok, record.id}, state}
       error -> error
     end
   end
@@ -149,8 +145,7 @@ defmodule Alods.Queue do
   def handle_call({:get_pending_entries}, _caller, state) do
     records = __MODULE__
               |> :dets.select(select_pending_older_than_or_equal_to_now())
-              |> Enum.map(&to_struct/1)
-
+              |> Enum.map(fn {_id, record} -> record end)
     {:reply, records, state}
   end
 
@@ -169,81 +164,43 @@ defmodule Alods.Queue do
     {:reply, result, state}
   end
 
-  def handle_call({:update_status, id, status}, _caller, state) when status in @valid_statuss do
+  def handle_call({:update_status, id, status}, _caller, state) when status in @valid_statuses do
     case find_record(id) do
       {:ok, record} ->
-        data = {
-          record.id,
-          record.method,
-          record.url,
-          record.data,
-          :os.system_time(:seconds),
-          status,
-          record.retries,
-          record.last_failure_reason,
-          record.created_at,
-          record.updated_at
-        }
-        :ok = :dets.insert(__MODULE__, data)
-        {:reply, {:ok, to_struct(data)}, state}
+        record = Alods.Queue.Record.update!(record, %{status: status})
+        :ok = :dets.insert(__MODULE__, {record.id, record})
+        {:reply, {:ok, record}, state}
+
       error -> {:reply, error, state}
     end
   end
 
-  @spec validate_url(String.t) :: {:ok, String.t} | {:error, atom}
-  defp validate_url(host) do
-    case URI.parse(host) do
-      %{scheme: scheme} when not scheme in ["http", "https"] -> {:error, :invalid_or_missing_protocol}
-      %{host: nil} -> {:error, :invalid_host}
-      _ -> {:ok, host}
-    end
-  end
-
   defp select_all do
-    fun do{id, method, url, data, timestamp, status, retries, reason, created_at, updated_at} when id != nil ->
-      {id, method, url, data, timestamp, status, retries, reason, created_at, updated_at} end
+    fun do{id, record} when id != nil -> record end
   end
 
   defp select_pending_older_than_or_equal_to_now do
     now = :os.system_time(:seconds)
-    fun do
-      {id, method, url, data, timestamp, status, retries, reason, created_at, updated_at}
-      when timestamp <= ^now and status == :pending ->
-        {id, method, url, data, timestamp, status, retries, reason, created_at, updated_at}
+    Ex2ms.fun do
+      {_id, %{timestamp: timestamp, status: status}} = record when timestamp <= ^now and status == "pending" -> record
     end
   end
 
   defp select_processing_longer_than_or_equal_to_seconds(seconds) do
     time = :os.system_time(:seconds) - seconds
-    fun do
-      {id, method, url, data, timestamp, status, retries, reason, created_at, updated_at}
-      when timestamp <= ^time and status == :processing ->
-        {id, method, url, data, timestamp, status, retries, reason, created_at, updated_at}
+    Ex2ms.fun do
+      {_id, %{timestamp: timestamp, status: status}} = record
+      when timestamp <= ^time and status == "processing" -> record
     end
   end
 
-  defp update_status(id, status) when status in @valid_statuss,
+  defp update_status(%Alods.Queue.Record{id: id}, status) when status in @valid_statuses,
        do: GenServer.call(__MODULE__, {:update_status, id, status})
-
-  defp to_struct({id, method, url, data, timestamp, status, retries, reason, created_at, updated_at}) do
-    %Alods.Queue.Record{
-      id: id,
-      method: method,
-      url: url,
-      data: data,
-      timestamp: timestamp,
-      status: status,
-      retries: retries,
-      last_failure_reason: reason,
-      created_at: created_at,
-      updated_at: updated_at
-    }
-  end
 
   defp find_record(id) do
     case :dets.lookup(__MODULE__, id) do
       empty_list when empty_list == [] -> {:error, :record_not_found}
-      [record] -> {:ok, to_struct(record)}
+      [{_id, record}] -> {:ok, record}
     end
   end
 
@@ -251,7 +208,6 @@ defmodule Alods.Queue do
     seconds = Application.get_env(:alods, :reset_after_processing_in_seconds, 60)
     __MODULE__
     |> :dets.select(select_processing_longer_than_or_equal_to_seconds(seconds))
-    |> Enum.map(&to_struct/1)
     |> Enum.each(&(update_status(&1.id, :pending)))
   end
 end

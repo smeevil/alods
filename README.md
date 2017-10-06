@@ -47,7 +47,7 @@ config :alods,
        start_producers_and_consumers: true,
        consumer_amount: 2,
        check_for_work_delay: :os.seconds(1),
-       reset_after_processing_in_seconds: 30 
+       reset_after_processing_in_seconds: 30        
 ```
 
 ## Usage
@@ -81,9 +81,9 @@ iex> Alods.list_queue
       data: %{foo: "bar"},
       id: "4d7ac4a9-2762-4c79-acda-66113d44c2d1",
       last_failure_reason: %{body: "Unprocessable Entity", status_code: 422},
-      method: :get, 
-      retries: 2, 
-      status: :pending, 
+      method: :get,
+      retries: 2,
+      status: :pending,
       timestamp: 1506606289,
       url: "http://0.0.0.0/example"
   },

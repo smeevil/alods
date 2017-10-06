@@ -9,7 +9,10 @@ defmodule Alods.Supervisor do
 
   def init(_options) do
     children = [worker(Alods.Queue, [])]
-    children = maybe_add_producer_and_consumers(children, Application.get_env(:alods, :start_producers_and_consumers, true))
+    children = maybe_add_producer_and_consumers(
+      children,
+      Application.get_env(:alods, :start_producers_and_consumers, true)
+    )
     supervise(children, strategy: :one_for_one)
   end
 

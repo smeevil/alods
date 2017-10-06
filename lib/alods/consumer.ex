@@ -7,7 +7,7 @@ defmodule Alods.Consumer do
 
   use GenStage
 
-  def start_link() do
+  def start_link do
     GenStage.start_link(__MODULE__, nil)
   end
 
@@ -45,7 +45,6 @@ defmodule Alods.Consumer do
   defp handle_response({:ok, response}, record),
        do: Alods.Queue.retry_later(record, %{status_code: response.status_code, body: response.body})
   defp handle_response(error, record), do: Alods.Queue.retry_later(record, error)
-
 
   defp construct_url(url) do
     uri = URI.parse(url)

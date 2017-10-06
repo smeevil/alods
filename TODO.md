@@ -9,7 +9,7 @@
 - [ ] Document every module
 - [ ] Document every public call
 - [ ] Cleanup code
-- [ ] Set max timeout of deliver to one hour, keep retrying every hour
+- [x] Set max timeout of deliver to one hour, keep retrying every hour
 - [ ] Set max days of deliveries retries a week, configurable
 
 ## YAGNI?

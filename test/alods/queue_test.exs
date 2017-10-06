@@ -38,18 +38,19 @@ defmodule Alods.QueueTest do
   end
 
   test "it will not store a PUT entry" do
-    assert  {:error, "put is not valid, must be one of get, post"} = Alods.Queue.push( :put,
+    assert  {:error, "put is not valid, must be one of get, post"} = Alods.Queue.push(
+              :put,
               "http://www.example.com/callback",
               %{maybe: true}
             )
   end
 
   test "it requires a protocol" do
-    assert  {:error, :invalid_or_missing_protocol} = Alods.Queue.push(:get, "www.example.com", %{maybe: true})
+    assert  {:error, [url: "invalid_or_missing_protocol"]} = Alods.Queue.push(:get, "www.example.com", %{maybe: true})
   end
 
   test "it will not store a FTP protocol" do
-    assert  {:error, :invalid_or_missing_protocol} = Alods.Queue.push(:get, "ftp://www.example.com", %{maybe: true})
+    assert  {:error, [url: "invalid_or_missing_protocol"]} = Alods.Queue.push(:get, "ftp://www.example.com", %{maybe: true})
   end
 
   test "it clears all the records" do
@@ -113,8 +114,8 @@ defmodule Alods.QueueTest do
                  returned: true
                },
                id: ^id,
-               method: :get,
-               status: :pending,
+               method: "get",
+               status: "pending",
                timestamp: _ts,
                url: "http://www.example.com/call_me"
              }
@@ -139,5 +140,26 @@ defmodule Alods.QueueTest do
     assert 1 = Alods.Queue.size
     assert :ok = Alods.Queue.delete(id)
     assert 0 = Alods.Queue.size
+  end
+
+# This is now a private function
+#  test "it can update a record's status" do
+#    {:ok, id} = Alods.Queue.push(:get, "http://www.example.com/call_me", %{returned: true})
+#    {:ok, original_record} = Alods.Queue.find(id)
+#    {:ok, updated_record} = Alods.Queue.update_status(original_record, :processing)
+#
+#    assert id == updated_record.id
+#    assert %{status: "processing"} = updated_record
+#  end
+
+  test "it can retry a record later" do
+    {:ok, id} = Alods.Queue.push(:get, "http://www.example.com/call_me", %{returned: true})
+    {:ok, original_record} = Alods.Queue.find(id)
+    {:ok, updated_id} = Alods.Queue.retry_later(original_record, "testing")
+
+    assert id == updated_id
+
+    {:ok, updated_record} = Alods.Queue.find(updated_id)
+    assert %{reason: "testing", retries: 1} = updated_record
   end
 end

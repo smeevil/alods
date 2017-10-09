@@ -20,9 +20,7 @@ defmodule Alods.Consumer do
     {:noreply, [], state}
   end
 
-  defp process(%Alods.Queue.Record{method: :get} = record) do
-    IO.puts "processing GET record #{inspect record}"
-
+  defp process(%Alods.Record{method: "get"} = record) do
     record.url
     |> construct_url
     |> Kernel.<>("?")
@@ -31,8 +29,7 @@ defmodule Alods.Consumer do
     |> handle_response(record)
   end
 
-  defp process(%Alods.Queue.Record{method: :post} = record) do
-    IO.puts "processing POST record #{inspect record}"
+  defp process(%Alods.Record{method: "post"} = record) do
     data = Poison.encode!(record.data)
 
     record.url
@@ -41,10 +38,10 @@ defmodule Alods.Consumer do
     |> handle_response(record)
   end
 
-  defp handle_response({:ok, %{status_code: 200}}, record), do: Alods.Queue.delete(record.id)
+  defp handle_response({:ok, %{status_code: 200}}, record), do: Alods.Delivered.store(record)
   defp handle_response({:ok, response}, record),
        do: Alods.Queue.retry_later(record, %{status_code: response.status_code, body: response.body})
-  defp handle_response(error, record), do: Alods.Queue.retry_later(record, error)
+  defp handle_response(error, record), do: Alods.Queue.retry_later(record, %{unhandled_error: error})
 
   defp construct_url(url) do
     uri = URI.parse(url)

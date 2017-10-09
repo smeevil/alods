@@ -25,7 +25,11 @@ defmodule Alods.Mixfile do
         "coveralls": :test,
         "coveralls.detail": :test,
         "coveralls.post": :test,
-        "coveralls.html": :test
+        "coveralls.html": :test,
+        "vcr": :test,
+        "vcr.delete": :test,
+        "vcr.check": :test,
+        "vcr.show": :test
       ],
     ]
   end
@@ -49,6 +53,7 @@ defmodule Alods.Mixfile do
       {:gen_stage, ">= 0.0.0"},
       {:httpoison, ">= 0.0.0"},
       {:poison, ">= 0.0.0"},
+      {:exvcr, ">= 0.0.0", only: [:test]},
     ]
   end
 end

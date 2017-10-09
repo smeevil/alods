@@ -1,4 +1,4 @@
-defmodule Alods.Queue.Record do
+defmodule Alods.Record do
   @moduledoc """
   These are the records that are stored in the queue.
   """
@@ -9,9 +9,10 @@ defmodule Alods.Queue.Record do
   @primary_key {:id, :binary_id, []}
   embedded_schema do
     field :created_at, :utc_datetime
+    field :delivered_at, :utc_datetime
     field :data, :map
-    field :reason, :string
     field :method, :string
+    field :reason, :map
     field :retries, :integer, default: 0
     field :status, :string
     field :timestamp, :integer
@@ -20,22 +21,20 @@ defmodule Alods.Queue.Record do
   end
 
   @required_fields [:created_at, :data, :id, :method, :status, :timestamp, :url]
-  @optional_fields [:reason, :retries, :updated_at]
+  @optional_fields [:delivered_at, :reason, :retries, :updated_at]
 
-  @valid_statuses ["pending", "processing"]
+  @valid_statuses ["delivered", "pending", "processing"]
   @valid_methods ["get", "post"]
   @valid_protocols ["http", "https"]
 
   @doc """
-  Use this to create the Alods.Queue.Record struct which will validate all options given.
+  Use this to create the Alods.Record struct which will validate all options given.
   """
-  @spec create(params :: map | list) :: {:ok, %Alods.Queue.Record{}} | {:error, Ecto.Changeset.t}
+  @spec create(params :: map | list) :: {:ok, %Alods.Record{}} | {:error, Ecto.Changeset.t}
   def create(params \\ %{})
   def create(params) when is_list(params), do: create(Enum.into(params, %{}))
   def create(params) do
-    params = params
-             |> add_defaults
-    case changeset(%Alods.Queue.Record{}, params) do
+    case changeset(%Alods.Record{}, add_defaults(params)) do
       %{valid?: true} = changeset -> {:ok, Ecto.Changeset.apply_changes(changeset)}
       changeset -> {:error, Enum.map(changeset.errors, fn ({field, {msg, _}}) -> {field, msg} end)}
     end
@@ -44,8 +43,9 @@ defmodule Alods.Queue.Record do
   @doc """
   Will Update a given record and raise if validation failed or something else went wrong
   """
-  @spec update!(%Alods.Queue.Record{}, map) :: %Alods.Queue.Record{}
-  def update!(%Alods.Queue.Record{} = record, params) do
+  @spec update!(%Alods.Record{}, map | list) :: %Alods.Record{}
+  def update!(%Alods.Record{} = record, params) when is_list(params), do: update!(record, Enum.into(params, %{}))
+  def update!(%Alods.Record{} = record, params) do
     {:ok, record} = update(record, params)
     record
   end
@@ -53,24 +53,27 @@ defmodule Alods.Queue.Record do
   @doc """
   Will update a given record
   """
-  @spec update(%Alods.Queue.Record{}, map) :: {:ok, %Alods.Queue.Record{}} | {:error, any}
-  def update(%Alods.Queue.Record{} = record, params) do
+  @spec update(%Alods.Record{}, map) :: {:ok, %Alods.Record{}} | {:error, any}
+  def update(%Alods.Record{} = record, params) when is_list(params), do: update(record, Enum.into(params, %{}))
+  def update(%Alods.Record{} = record, params) do
     params = params
              |> maybe_change_atoms_to_strings
              |> Map.put(:updated_at, DateTime.utc_now)
+
     case changeset(record, params) do
       %{valid?: true} = changeset -> {:ok, Ecto.Changeset.apply_changes(changeset)}
       changeset -> {:error, Enum.map(changeset.errors, fn ({field, {msg, _}}) -> {field, msg} end)}
     end
   end
 
-  @spec changeset(%Alods.Queue.Record{}, map) :: Ecto.Changeset.t
+  @spec changeset(%Alods.Record{}, map) :: Ecto.Changeset.t
   defp changeset(struct, params) do
     params = params
              |> maybe_change_atoms_to_strings
 
     struct
     |> cast(params, @required_fields ++ @optional_fields)
+    |> validate_required(@required_fields)
     |> validate_inclusion(:status, @valid_statuses, message: "should be one of #{Enum.join(@valid_statuses, ", ")}")
     |> validate_inclusion(:method, @valid_methods, message: "should be one of #{Enum.join(@valid_methods, ", ")}")
     |> validate_number(:retries, greater_than_or_equal_to: 0)
@@ -88,10 +91,7 @@ defmodule Alods.Queue.Record do
     case URI.parse(url) do
       %{scheme: scheme} when not scheme in @valid_protocols ->
         Ecto.Changeset.add_error(changeset, :url, "invalid_or_missing_protocol")
-
-      %{host: nil} ->
-        Ecto.Changeset.add_error(changeset, :url, "invalid_host")
-
+      %{host: nil} -> Ecto.Changeset.add_error(changeset, :url, "invalid_host")
       _ -> changeset
     end
   end

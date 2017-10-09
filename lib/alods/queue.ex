@@ -1,59 +1,14 @@
 defmodule Alods.Queue do
   @moduledoc """
-    This module takes care of starting a DETS store.
+    This module takes care of starting a DETS store which will hold the message to be delivered.
   """
 
-  use GenServer
   import Ex2ms
+  use GenServer
+  use Alods.DETS, "queue"
 
   @valid_methods [:get, :post]
   @valid_statuses [:pending, :processing]
-
-  @spec start_link :: {:ok, pid}
-  def start_link do
-    GenServer.start_link(__MODULE__, nil, name: __MODULE__)
-  end
-
-  def init(_options) do
-    env = Application.get_env(:alods, :env)
-    if env == nil do
-      raise("Please make sure you define alods env in your config/dev.exs with `config :alods, env: :dev` for example")
-    end
-
-    Process.flag(:trap_exit, true)
-    path = File.cwd! <> "/priv"
-    file = "/alods_store_#{env}.ets"
-    unless File.exists?(path), do: File.mkdir_p!(path)
-    auto_save = Application.get_env(:alods, :store_auto_save_ms, :timer.seconds(60))
-
-    {:ok, _reference} = :dets.open_file(__MODULE__, file: to_charlist(path <> file), auto_save: auto_save)
-    {:ok, nil}
-  end
-
-  #TODO seems not to trigger for mix test, in IEX when running :init.stop it works fine...
-  def terminate(_reason, _status) do
-    IO.puts "Closing DETS"
-    :ok = :dets.close(__MODULE__)
-    :normal
-  end
-
-  @doc """
-  Get the current amount of record entries in the store
-  """
-  @spec length :: number
-  def length, do: :dets.info(__MODULE__)[:size]
-
-  @doc """
-  Alias for lenth/1
-  """
-  @spec size :: number
-  def size, do: length()
-
-  @doc """
-  Clears the store, WARNING this removes all records!
-  """
-  @spec clear! :: :ok
-  def clear!, do: GenServer.call(__MODULE__, {:clear})
 
   @doc """
   Returns all entries of which their timestamp are smaller then the current time
@@ -61,19 +16,7 @@ defmodule Alods.Queue do
   @spec get_pending_entries :: {:ok, [{String.t, atom, String.t, map, number, atom}]}
   def get_pending_entries, do: GenServer.call(__MODULE__, {:get_pending_entries})
 
-  @doc """
-  Will return all records in the store
-  """
-  @spec list :: list
-  def list, do: GenServer.call(__MODULE__, {:list})
-
-  @spec find(String.t) :: %Alods.Queue.Record{}
-  def find(id), do: GenServer.call(__MODULE__, {:find, id})
-
-  @spec delete(String.t) :: :ok
-  def delete(id), do: GenServer.call(__MODULE__, {:delete, id})
-
-  @spec retry_later(%Alods.Queue.Record{}, any) :: :ok | {:error, any}
+  @spec retry_later(%Alods.Record{}, any) :: :ok | {:error, any}
   def retry_later(record, reason), do: GenServer.call(__MODULE__, {:retry_later, record.id, reason})
 
   @doc """
@@ -84,7 +27,7 @@ defmodule Alods.Queue do
   def push(method, url, data)
       when method in @valid_methods and is_map(data) do
 
-    case Alods.Queue.Record.create(%{method: method, url: url, data: data}) do
+    case Alods.Record.create(%{method: method, url: url, data: data}) do
       {:ok, record} -> GenServer.call(__MODULE__, {:push, record})
       error -> error
     end
@@ -113,33 +56,53 @@ defmodule Alods.Queue do
     |> Enum.filter(&(&1 != nil))
   end
 
-  def handle_call({:list}, _caller, state) do
-    records = __MODULE__
-              |> :dets.select(select_all())
+  defp update_status({_id, %Alods.Record{} = record}, status), do: update_status(record, status)
+  defp update_status(%Alods.Record{} = record, status) when status in @valid_statuses,
+       do: GenServer.call(__MODULE__, {:update_status, record, status})
 
-    {:reply, records, state}
+  defp reset_entries_stuck_in_processing do
+    seconds = Application.get_env(:alods, :reset_after_processing_in_seconds, 60)
+
+    __MODULE__
+    |> :dets.select(select_processing_longer_than_or_equal_to_seconds(seconds))
+    |> Enum.each(&(update_status(&1, :pending)))
+  end
+
+  @spec select_all :: list
+  defp select_all do
+    fun do{id, record} when id != nil -> record end
+  end
+
+  @spec select_pending_older_than_or_equal_to_now :: list
+  defp select_pending_older_than_or_equal_to_now do
+    now = :os.system_time(:seconds)
+    Ex2ms.fun do
+      {_id, %{timestamp: timestamp, status: status}} = record when timestamp <= ^now and status == "pending" ->
+        record
+    end
+  end
+
+  @spec select_processing_longer_than_or_equal_to_seconds(non_neg_integer) :: list
+  defp select_processing_longer_than_or_equal_to_seconds(seconds) do
+    time = :os.system_time(:seconds) - seconds
+    Ex2ms.fun do
+      {_id, %{timestamp: timestamp, status: status}} = record
+      when timestamp <= ^time and status == "processing" -> record
+    end
   end
 
   def handle_call({:retry_later, id, reason}, _caller, state) do
     {:ok, record} = find_record(id)
-    IO.puts "record #{inspect record}"
     delay = (2 * record.retries)
     delay = if delay > 3600, do: 3600, else: delay
     retry_at = :os.system_time(:seconds) + delay
 
-    record = Alods.Queue.Record.update!(
+    record = Alods.Record.update!(
       record,
       %{timestamp: retry_at, status: :pending, retries: (record.retries + 1), reason: reason}
     )
     :ok = :dets.insert(__MODULE__, {record.id, record})
     {:reply, {:ok, record.id}, state}
-  end
-
-  def handle_call({:push, %Alods.Queue.Record{} = record}, _caller, state) do
-    case :dets.insert_new(__MODULE__, {record.id, record}) do
-      true -> {:reply, {:ok, record.id}, state}
-      error -> error
-    end
   end
 
   def handle_call({:get_pending_entries}, _caller, state) do
@@ -149,65 +112,15 @@ defmodule Alods.Queue do
     {:reply, records, state}
   end
 
-  def handle_call({:clear}, _caller, state) do
-    :ok = :dets.delete_all_objects(__MODULE__)
-    {:reply, :ok, state}
+  def handle_call({:update_status, record, status}, _caller, state) when status in @valid_statuses do
+    #    case find_record(id) do
+    #      {:ok, record} ->
+    record = Alods.Record.update!(record, %{status: status})
+    :ok = :dets.insert(__MODULE__, {record.id, record})
+    {:reply, {:ok, record}, state}
+
+    #      error -> {:reply, error, state}
+    #  end
   end
 
-  def handle_call({:find, id}, _caller, state) do
-    result = find_record(id)
-    {:reply, result, state}
-  end
-
-  def handle_call({:delete, id}, _caller, state) do
-    result = :dets.delete(__MODULE__, id)
-    {:reply, result, state}
-  end
-
-  def handle_call({:update_status, id, status}, _caller, state) when status in @valid_statuses do
-    case find_record(id) do
-      {:ok, record} ->
-        record = Alods.Queue.Record.update!(record, %{status: status})
-        :ok = :dets.insert(__MODULE__, {record.id, record})
-        {:reply, {:ok, record}, state}
-
-      error -> {:reply, error, state}
-    end
-  end
-
-  defp select_all do
-    fun do{id, record} when id != nil -> record end
-  end
-
-  defp select_pending_older_than_or_equal_to_now do
-    now = :os.system_time(:seconds)
-    Ex2ms.fun do
-      {_id, %{timestamp: timestamp, status: status}} = record when timestamp <= ^now and status == "pending" -> record
-    end
-  end
-
-  defp select_processing_longer_than_or_equal_to_seconds(seconds) do
-    time = :os.system_time(:seconds) - seconds
-    Ex2ms.fun do
-      {_id, %{timestamp: timestamp, status: status}} = record
-      when timestamp <= ^time and status == "processing" -> record
-    end
-  end
-
-  defp update_status(%Alods.Queue.Record{id: id}, status) when status in @valid_statuses,
-       do: GenServer.call(__MODULE__, {:update_status, id, status})
-
-  defp find_record(id) do
-    case :dets.lookup(__MODULE__, id) do
-      empty_list when empty_list == [] -> {:error, :record_not_found}
-      [{_id, record}] -> {:ok, record}
-    end
-  end
-
-  defp reset_entries_stuck_in_processing do
-    seconds = Application.get_env(:alods, :reset_after_processing_in_seconds, 60)
-    __MODULE__
-    |> :dets.select(select_processing_longer_than_or_equal_to_seconds(seconds))
-    |> Enum.each(&(update_status(&1.id, :pending)))
-  end
 end

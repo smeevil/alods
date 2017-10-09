@@ -17,25 +17,17 @@ defmodule Alods do
   @spec notify_by_post(String.t, map | list) :: {:ok, String.t}
   def notify_by_post(url, data), do: notify(:post, url, data)
 
-  @doc """
-  Returns a list of all current notifications that are waiting for delivery
-  """
-  @spec list_queue() :: [%Alods.Queue.Record{}]
-  def list_queue, do: Alods.Queue.list
-
-  @doc """
-  Returns the number of notifications that are waiting for delivery
-  """
-  @spec queue_size() :: non_neg_integer
-  def queue_size, do: Alods.Queue.size
-
-  #TODO For demo purpose only, remove me later
-  def stress do
-    Enum.each(0..99, fn _ ->
-#      Alods.Queue.push(Enum.random([:get, :post]), "http://0.0.0.0/success", %{foo: "bar", bar: false})
-      Alods.Queue.push(Enum.random([:get, :post]), "http://0.0.0.0/random", %{foo: "bar", bar: false})
-    end)
-  end
-
   defp notify(method, url, data), do: Alods.Queue.push(method, url, data)
+
+  #  For demo purpose only, remove me later
+  #  def stress do
+  #    Enum.each(
+  #      0..99,
+  #      fn _ ->
+  #        #      Alods.Queue.push(Enum.random([:get, :post]), "http://0.0.0.0/success", %{foo: "bar", bar: false})
+  #        Alods.Queue.push(Enum.random([:get, :post]), "http://0.0.0.0/random", %{foo: "bar", bar: false})
+  #      end
+  #    )
+  #  end
+
 end

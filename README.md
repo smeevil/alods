@@ -44,10 +44,11 @@ be found at [https://hexdocs.pm/alods](https://hexdocs.pm/alods).
 
 ```elixir
 config :alods,
-       start_producers_and_consumers: true,
-       consumer_amount: 2,
-       check_for_work_delay: :os.seconds(1),
-       reset_after_processing_in_seconds: 30        
+       start_producers_and_consumers: true, #defaults to true
+       consumer_amount: 2, #defaults to 1
+       check_for_work_delay: :os.seconds(5), #defaults to 1
+       reset_after_processing_in_seconds: 30, #defaults to 60
+       store_delivered_entries_for_days: 1 #defaults to 7   
 ```
 
 ## Usage
@@ -75,12 +76,12 @@ converting the data to JSON automatically.
 To see what is currently queued for delivery :
 
 ```elixir
-iex> Alods.list_queue
+iex> Alods.Queue.list
 [
-  %Alods.Queue.Record{
+  %Alods.Record{
       data: %{foo: "bar"},
       id: "4d7ac4a9-2762-4c79-acda-66113d44c2d1",
-      last_failure_reason: %{body: "Unprocessable Entity", status_code: 422},
+      reason: %{body: "Unprocessable Entity", status_code: 422},
       method: :get,
       retries: 2,
       status: :pending,
@@ -95,6 +96,30 @@ iex> Alods.list_queue
 To get the amount of items in the queue
 
 ```elixir
-iex> Alods.queue_size()
+iex> Alods.Queue.size()
 256
+```
+
+## Delivered notifications
+
+You can see all delivered notifications by using:
+
+```elixir
+iex> Alods.Delivered.list()
+[
+  %Alods.Record{
+    created_at: #DateTime<2017-10-09 11:25:33.163714Z>, 
+    data: %{},
+    delivered_at: #DateTime<2017-10-09 11:25:33.464013Z>,
+    id: "be39835e-50ff-454e-90e2-cdbbd1dc290d", 
+    method: "get", 
+    reason: nil,
+    retries: 0, 
+    status: "delivered", 
+    timestamp: 1507548333,
+    updated_at: #DateTime<2017-10-09 11:25:33.464034Z>,
+    url: "http://example.com"
+   },
+   ...
+]
 ```

@@ -1,9 +1,15 @@
 defmodule Alods.QueueTest do
-  use ExUnit.Case
-  doctest Alods
+  use ExUnit.Case, async: false
+  use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
+
+  setup_all do
+    ExVCR.Config.cassette_library_dir("test/fixture/vcr_cassettes")
+    :ok
+  end
 
   setup do
     Alods.Queue.clear!()
+    Alods.Delivered.clear!()
   end
 
   test "the store is empty" do
@@ -50,7 +56,11 @@ defmodule Alods.QueueTest do
   end
 
   test "it will not store a FTP protocol" do
-    assert  {:error, [url: "invalid_or_missing_protocol"]} = Alods.Queue.push(:get, "ftp://www.example.com", %{maybe: true})
+    assert  {:error, [url: "invalid_or_missing_protocol"]} = Alods.Queue.push(
+              :get,
+              "ftp://www.example.com",
+              %{maybe: true}
+            )
   end
 
   test "it clears all the records" do
@@ -109,7 +119,7 @@ defmodule Alods.QueueTest do
     record = Alods.Queue.find(id)
     assert {
              :ok,
-             %Alods.Queue.Record{
+             %Alods.Record{
                data: %{
                  returned: true
                },
@@ -142,24 +152,20 @@ defmodule Alods.QueueTest do
     assert 0 = Alods.Queue.size
   end
 
-# This is now a private function
-#  test "it can update a record's status" do
-#    {:ok, id} = Alods.Queue.push(:get, "http://www.example.com/call_me", %{returned: true})
-#    {:ok, original_record} = Alods.Queue.find(id)
-#    {:ok, updated_record} = Alods.Queue.update_status(original_record, :processing)
-#
-#    assert id == updated_record.id
-#    assert %{status: "processing"} = updated_record
-#  end
-
   test "it can retry a record later" do
     {:ok, id} = Alods.Queue.push(:get, "http://www.example.com/call_me", %{returned: true})
     {:ok, original_record} = Alods.Queue.find(id)
-    {:ok, updated_id} = Alods.Queue.retry_later(original_record, "testing")
+    {:ok, updated_id} = Alods.Queue.retry_later(original_record, %{my_reason: "testing"})
 
     assert id == updated_id
 
     {:ok, updated_record} = Alods.Queue.find(updated_id)
-    assert %{reason: "testing", retries: 1} = updated_record
+    assert %{
+             reason: %{
+               my_reason: "testing"
+             },
+             retries: 1
+           } = updated_record
   end
+
 end

@@ -4,7 +4,7 @@ defmodule Alods.Delivered do
   """
 
   import Ex2ms
-  use GenServer
+
   use Alods.DETS, "delivered"
 
   @spec init(String.t) :: {:ok, nil}
@@ -19,17 +19,17 @@ defmodule Alods.Delivered do
   end
 
   @doc """
+  This function will initiate a DETS table clean, meaning it will remove all entries which are older then the configured store time, which by default is 7 days.
+  """
+  @spec clean_store :: pid() | {pid(), reference()}
+  def clean_store, do: Process.spawn(fn -> GenServer.cast(__MODULE__, {:clean_store}) end, [])
+
+  @doc """
   Stores the given record, updating the delivred at field, resetting the reason, and setting the status to delivered.
   After successful storing, it will be deleted from the Queue.
   """
   @spec store(%Alods.Record{}) :: :ok
   def store(%Alods.Record{} = record) do
-    {:ok, record_id} = push(record)
-    :ok = Alods.Queue.delete(record_id)
-  end
-
-  @spec push(%Alods.Record{}) :: {:ok, String.t} | {:error, String.t}
-  defp push(%Alods.Record{} = record) do
     record = Alods.Record.update!(
       record,
       delivered_at: DateTime.utc_now,
@@ -37,15 +37,9 @@ defmodule Alods.Delivered do
       reason: nil,
       timestamp: :os.system_time(:seconds)
     )
-    GenServer.call(__MODULE__, {:push, record})
+    true = :dets.insert_new(__MODULE__, {record.id, record})
+    :ok = Alods.Queue.delete(record.id)
   end
-
-  @spec select_all :: list
-  defp select_all do
-    fun do{id, record} when id != nil -> record end
-  end
-
-  def clean_store, do: Process.spawn(fn -> GenServer.cast(__MODULE__, {:clean_store}) end, [])
 
   def handle_cast({:clean_store}, state) do
     query = select_processing_longer_than_days(Application.get_env(:alods, :store_delivered_entries_for_days, 7))
@@ -54,6 +48,11 @@ defmodule Alods.Delivered do
     |> Enum.each(fn {_id, record} -> delete(record) end)
 
     {:noreply, state}
+  end
+
+  @spec select_all :: list
+  defp select_all do
+    fun do{id, record} when id != nil -> record end
   end
 
   @spec select_processing_longer_than_days(non_neg_integer) :: list

@@ -21,7 +21,10 @@ defmodule AlodsTest do
       record = List.first(Alods.Queue.list)
       assert nil == record.delivered_at
       assert 0 = Alods.Delivered.size
+      {:ok, ^record} = Alods.Queue.find(record.id)
+      {:error, :record_not_found} = Alods.Delivered.find(record.id)
 
+      assert %{delivered: 0, queued: 1} == Alods.queue_sizes()
       Alods.Producer.start_link()
       Alods.ConsumerSupervisor.start_link()
       :timer.sleep(110)
@@ -32,7 +35,14 @@ defmodule AlodsTest do
       record = List.first(Alods.Delivered.list)
       refute nil == record.delivered_at
       assert record.status == "delivered"
+      {:error, :record_not_found} = Alods.Queue.find(record.id)
+      {:ok, ^record} = Alods.Delivered.find(record.id)
+      assert %{delivered: 1, queued: 0} == Alods.queue_sizes()
     end
+  end
+
+  test "it can return queue sizes" do
+    assert %{delivered: 0, queued: 0} == Alods.queue_sizes()
   end
 
   test "it will store a delivered request by post" do

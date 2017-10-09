@@ -98,6 +98,9 @@
     <a href="#clean_store/0">clean_store()</a>
   </div>
   
+    <div class="summary-synopsis"><p>This function will initiate a DETS table clean, meaning it will remove all entries which are older then the configured store time, which by default is 7 days</p>
+</div>
+  
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -158,7 +161,7 @@
     <a href="#size/0">size()</a>
   </div>
   
-    <div class="summary-synopsis"><p>Alias for lenth/1</p>
+    <div class="summary-synopsis"><p>Alias for length/1</p>
 </div>
   
 </div>
@@ -167,11 +170,18 @@
     <a href="#start_link/0">start_link()</a>
   </div>
   
+    <div class="summary-synopsis"><p>Starts the Genserver which will own the DETS table and is the only one that has write rights</p>
+</div>
+  
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#store/1">store(record)</a>
   </div>
+  
+    <div class="summary-synopsis"><p>Stores the given record, updating the delivred at field, resetting the reason, and setting the status to delivered.
+After successful storing, it will be deleted from the Queue</p>
+</div>
   
 </div>
 
@@ -206,9 +216,16 @@
     
     
     
+      <div class="specs">
+        
+          <pre>clean_store() :: pid | {pid, reference}</pre>
+        
+      </div>
+    
   </div>
   <section class="docstring">
-    
+    <p>This function will initiate a DETS table clean, meaning it will remove all entries which are older then the configured store time, which by default is 7 days.</p>
+
   </section>
 </div>
 <div class="detail" id="clear!/0">
@@ -377,7 +394,7 @@
     
   </div>
   <section class="docstring">
-    <p>Alias for lenth/1</p>
+    <p>Alias for length/1</p>
 
   </section>
 </div>
@@ -401,7 +418,8 @@
     
   </div>
   <section class="docstring">
-    
+    <p>Starts the Genserver which will own the DETS table and is the only one that has write rights.</p>
+
   </section>
 </div>
 <div class="detail" id="store/1">
@@ -424,7 +442,9 @@
     
   </div>
   <section class="docstring">
-    
+    <p>Stores the given record, updating the delivred at field, resetting the reason, and setting the status to delivered.
+After successful storing, it will be deleted from the Queue.</p>
+
   </section>
 </div>
 

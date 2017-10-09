@@ -17,6 +17,17 @@ defmodule Alods do
   @spec notify_by_post(String.t, map | list) :: {:ok, String.t}
   def notify_by_post(url, data), do: notify(:post, url, data)
 
+  @doc """
+  Returns a map with the current queue sizes
+  """
+  @spec queue_sizes :: map
+  def queue_sizes do
+    %{
+      delivered: Alods.Delivered.size,
+      queued: Alods.Queue.size,
+    }
+  end
+
   defp notify(method, url, data), do: Alods.Queue.push(method, url, data)
 
   #  For demo purpose only, remove me later

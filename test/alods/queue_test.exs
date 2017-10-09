@@ -168,4 +168,10 @@ defmodule Alods.QueueTest do
            } = updated_record
   end
 
+  test "it can't store the same record twice" do
+    {:ok, id} = Alods.Queue.push(:get, "http://www.example.com/call_me", %{returned: true})
+    {:ok, record} = Alods.Queue.find(id)
+    :ok = Alods.Delivered.store(record)
+    assert_raise MatchError, fn -> Alods.Delivered.store(record) end
+  end
 end

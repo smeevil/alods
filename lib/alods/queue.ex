@@ -4,7 +4,6 @@ defmodule Alods.Queue do
   """
 
   import Ex2ms
-  use GenServer
   use Alods.DETS, "queue"
 
   @valid_methods [:get, :post]
@@ -28,7 +27,11 @@ defmodule Alods.Queue do
       when method in @valid_methods and is_map(data) do
 
     case Alods.Record.create(%{method: method, url: url, data: data}) do
-      {:ok, record} -> GenServer.call(__MODULE__, {:push, record})
+      {:ok, record} ->
+        case :dets.insert_new(__MODULE__, {record.id, record}) do
+          true -> {:ok, record.id}
+          error -> error
+        end
       error -> error
     end
   end
@@ -56,7 +59,7 @@ defmodule Alods.Queue do
     |> Enum.filter(&(&1 != nil))
   end
 
-  defp update_status({_id, %Alods.Record{} = record}, status), do: update_status(record, status)
+  #  defp update_status({_id, %Alods.Record{} = record}, status), do: update_status(record, status)
   defp update_status(%Alods.Record{} = record, status) when status in @valid_statuses,
        do: GenServer.call(__MODULE__, {:update_status, record, status})
 
@@ -92,7 +95,7 @@ defmodule Alods.Queue do
   end
 
   def handle_call({:retry_later, id, reason}, _caller, state) do
-    {:ok, record} = find_record(id)
+    {:ok, record} = find(id)
     delay = (2 * record.retries)
     delay = if delay > 3600, do: 3600, else: delay
     retry_at = :os.system_time(:seconds) + delay

@@ -6,7 +6,11 @@ defmodule Alods.DETS do
 
   defmacro __using__(name) do
     quote do
+      use GenServer
 
+      @doc"""
+      Starts the Genserver which will keep the DETS table open and is the only one that has write rights.
+      """
       @spec start_link :: {:ok, pid}
       def start_link do
         GenServer.start_link(__MODULE__, unquote(name), name: __MODULE__)
@@ -21,7 +25,7 @@ defmodule Alods.DETS do
       end
       defoverridable [init: 1]
 
-      #TODO seems not to trigger for mix test, in IEX when running :init.stop it works fine...
+      #TODO seems not to trigger for mix test, in IEX when running :init.stop it works fine...how can we tacle this
       def terminate(_reason, _status) do
         IO.puts "Closing DETS"
         :ok = :dets.close(__MODULE__)
@@ -35,34 +39,38 @@ defmodule Alods.DETS do
       def length, do: :dets.info(__MODULE__)[:size]
 
       @doc """
-      Alias for lenth/1
+      Alias for length/1
       """
       @spec size :: number
       def size, do: length()
-
       @doc """
       Clears the store, WARNING this removes all records!
       """
       @spec clear! :: :ok
-      def clear!, do: GenServer.call(__MODULE__, {:clear})
+      def clear!, do: :dets.delete_all_objects(__MODULE__)
 
       @doc """
       Will return all records in the store
       """
       @spec list :: list
-      def list, do: GenServer.call(__MODULE__, {:list})
+      def list, do: :dets.select(__MODULE__, select_all())
 
       @doc"""
       Finds a record by id
       """
       @spec find(String.t) :: {:ok, %Alods.Record{}} | {:error, :record_not_found}
-      def find(id), do: GenServer.call(__MODULE__, {:find, id})
+      def find(id) do
+        case :dets.lookup(__MODULE__, id) do
+          empty_list when empty_list == [] -> {:error, :record_not_found}
+          [{_id, record}] -> {:ok, record}
+        end
+      end
 
       @doc"""
       Deletes the given record
       """
       @spec delete!(%Alods.Record{}) :: :ok
-      def delete!(%Alods.Record{} = record), do: GenServer.call(__MODULE__, {:delete!, record})
+      def delete!(%Alods.Record{} = record), do: :dets.delete(__MODULE__, record.id)
 
       @doc"""
       Finds a record by id, and deletes that record
@@ -70,43 +78,8 @@ defmodule Alods.DETS do
       @spec delete(String.t) :: :ok | {:error, any}
       def delete(id) do
         case find(id) do
-          {:ok, record} -> delete!(record)
+          {:ok, record} -> :dets.delete(__MODULE__, record.id)
           {:error, _} = error -> error
-        end
-      end
-
-      def handle_call({:list}, _caller, state) do
-        records = :dets.select(__MODULE__, select_all())
-        {:reply, records, state}
-      end
-
-      def handle_call({:clear}, _caller, state) do
-        :ok = :dets.delete_all_objects(__MODULE__)
-        {:reply, :ok, state}
-      end
-
-      def handle_call({:find, id}, _caller, state) do
-        result = find_record(id)
-        {:reply, result, state}
-      end
-
-      def handle_call({:delete!, %Alods.Record{} = record}, _caller, state) do
-        :ok = :dets.delete(__MODULE__, record.id)
-        {:reply, :ok, state}
-      end
-
-      def handle_call({:push, %Alods.Record{} = record}, _caller, state) do
-        case :dets.insert_new(__MODULE__, {record.id, record}) do
-          true -> {:reply, {:ok, record.id}, state}
-          error -> error
-        end
-      end
-
-      @spec find_record(String.t) :: {:ok, %Alods.Record{}} | {:error, :record_not_found}
-      defp find_record(id) do
-        case :dets.lookup(__MODULE__, id) do
-          empty_list when empty_list == [] -> {:error, :record_not_found}
-          [{_id, record}] -> {:ok, record}
         end
       end
 

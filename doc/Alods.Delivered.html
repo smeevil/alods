@@ -5,7 +5,7 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.16.4">
-    <title>Alods.Queue – alods v0.1.0</title>
+    <title>Alods.Delivered – alods v0.1.0</title>
     <link rel="stylesheet" href="dist/app-5b9e160cec.css" />
     
     
@@ -66,13 +66,13 @@
 
       <h1>
         <small class="visible-xs">alods v0.1.0</small>
-        Alods.Queue
+        Alods.Delivered
         
       </h1>
 
       
         <section id="moduledoc">
-          <p>  This module takes care of starting a DETS store which will hold the message to be delivered.</p>
+          <p>  This module takes care of starting a DETS store which will hold delivered messages.</p>
 
         </section>
       
@@ -94,6 +94,12 @@
       <a href="#functions">Functions</a>
     </h2>
     <div class="summary-row">
+  <div class="summary-signature">
+    <a href="#clean_store/0">clean_store()</a>
+  </div>
+  
+</div>
+<div class="summary-row">
   <div class="summary-signature">
     <a href="#clear!/0">clear!()</a>
   </div>
@@ -131,21 +137,6 @@
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#get_pending_entries/0">get_pending_entries()</a>
-  </div>
-  
-    <div class="summary-synopsis"><p>Returns all entries of which their timestamp are smaller then the current time</p>
-</div>
-  
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#get_work/0">get_work()</a>
-  </div>
-  
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
     <a href="#length/0">length()</a>
   </div>
   
@@ -164,21 +155,6 @@
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#push/3">push(method, url, data)</a>
-  </div>
-  
-    <div class="summary-synopsis"><p>Pushes a record into the store</p>
-</div>
-  
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#retry_later/2">retry_later(record, reason)</a>
-  </div>
-  
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
     <a href="#size/0">size()</a>
   </div>
   
@@ -189,6 +165,12 @@
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#start_link/0">start_link()</a>
+  </div>
+  
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#store/1">store(record)</a>
   </div>
   
 </div>
@@ -212,7 +194,24 @@
             </a>
             Functions
           </h1>
-          <div class="detail" id="clear!/0">
+          <div class="detail" id="clean_store/0">
+  
+  
+  <div class="detail-header">
+    <a href="#clean_store/0" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">clean_store()</span>
+    
+    
+    
+  </div>
+  <section class="docstring">
+    
+  </section>
+</div>
+<div class="detail" id="clear!/0">
   
   
   <div class="detail-header">
@@ -310,47 +309,6 @@
 
   </section>
 </div>
-<div class="detail" id="get_pending_entries/0">
-  
-  
-  <div class="detail-header">
-    <a href="#get_pending_entries/0" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <span class="signature">get_pending_entries()</span>
-    
-    
-    
-      <div class="specs">
-        
-          <pre>get_pending_entries() :: {:ok, [{<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>, atom, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>, map, number, atom}]}</pre>
-        
-      </div>
-    
-  </div>
-  <section class="docstring">
-    <p>Returns all entries of which their timestamp are smaller then the current time</p>
-
-  </section>
-</div>
-<div class="detail" id="get_work/0">
-  
-  
-  <div class="detail-header">
-    <a href="#get_work/0" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <span class="signature">get_work()</span>
-    
-    
-    
-  </div>
-  <section class="docstring">
-    
-  </section>
-</div>
 <div class="detail" id="length/0">
   
   
@@ -399,55 +357,6 @@
 
   </section>
 </div>
-<div class="detail" id="push/3">
-  
-  
-  <div class="detail-header">
-    <a href="#push/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <span class="signature">push(method, url, data)</span>
-    
-    
-    
-      <div class="specs">
-        
-          <pre>push(atom, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>, map) :: {:ok, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>} | {:error, any}</pre>
-        
-      </div>
-    
-  </div>
-  <section class="docstring">
-    <p>Pushes a record into the store.</p>
-
-  </section>
-</div>
-<div class="detail" id="retry_later/2">
-  
-  
-  <div class="detail-header">
-    <a href="#retry_later/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <span class="signature">retry_later(record, reason)</span>
-    
-    
-    
-      <div class="specs">
-        
-          <pre>retry_later(%Alods.Record{created_at: term, data: term, delivered_at: term, id: term, method: term, reason: term, retries: term, status: term, timestamp: term, updated_at: term, url: term}, any) ::
-  :ok |
-  {:error, any}</pre>
-        
-      </div>
-    
-  </div>
-  <section class="docstring">
-    
-  </section>
-</div>
 <div class="detail" id="size/0">
   
   
@@ -487,6 +396,29 @@
       <div class="specs">
         
           <pre>start_link() :: {:ok, pid}</pre>
+        
+      </div>
+    
+  </div>
+  <section class="docstring">
+    
+  </section>
+</div>
+<div class="detail" id="store/1">
+  
+  
+  <div class="detail-header">
+    <a href="#store/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">store(record)</span>
+    
+    
+    
+      <div class="specs">
+        
+          <pre>store(%Alods.Record{created_at: term, data: term, delivered_at: term, id: term, method: term, reason: term, retries: term, status: term, timestamp: term, updated_at: term, url: term}) :: :ok</pre>
         
       </div>
     

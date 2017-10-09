@@ -5,7 +5,7 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.16.4">
-    <title>Alods – alods v0.1.0</title>
+    <title>Alods.Record – alods v0.1.0</title>
     <link rel="stylesheet" href="dist/app-5b9e160cec.css" />
     
     
@@ -66,13 +66,13 @@
 
       <h1>
         <small class="visible-xs">alods v0.1.0</small>
-        Alods
+        Alods.Record
         
       </h1>
 
       
         <section id="moduledoc">
-          <p>Documentation for Alods.</p>
+          <p>These are the records that are stored in the queue.</p>
 
         </section>
       
@@ -95,21 +95,28 @@
     </h2>
     <div class="summary-row">
   <div class="summary-signature">
-    <a href="#notify_by_get/2">notify_by_get(url, data)</a>
+    <a href="#create/1">create(params \\ %{})</a>
   </div>
   
-    <div class="summary-synopsis"><p>Deliver a notification via an HTTP GET request to the given url
-the data will be url-encoded and attached as query string to the url</p>
+    <div class="summary-synopsis"><p>Use this to create the Alods.Record struct which will validate all options given</p>
 </div>
   
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#notify_by_post/2">notify_by_post(url, data)</a>
+    <a href="#update/2">update(record, params)</a>
   </div>
   
-    <div class="summary-synopsis"><p>Deliver a notification via an HTTP POST request to the given url.
-The data will be JSON encoded and be attached to the body</p>
+    <div class="summary-synopsis"><p>Will update a given record</p>
+</div>
+  
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update!/2">update!(record, params)</a>
+  </div>
+  
+    <div class="summary-synopsis"><p>Will Update a given record and raise if validation failed or something else went wrong</p>
 </div>
   
 </div>
@@ -133,53 +140,81 @@ The data will be JSON encoded and be attached to the body</p>
             </a>
             Functions
           </h1>
-          <div class="detail" id="notify_by_get/2">
+          <div class="detail" id="create/1">
   
+  
+    <span id="create/0"></span>
   
   <div class="detail-header">
-    <a href="#notify_by_get/2" class="detail-link" title="Link to this function">
+    <a href="#create/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <span class="signature">notify_by_get(url, data)</span>
+    <span class="signature">create(params \\ %{})</span>
     
     
     
       <div class="specs">
         
-          <pre>notify_by_get(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>, map | list) :: {:ok, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>}</pre>
+          <pre>create(params :: map | list) ::
+  {:ok, %Alods.Record{created_at: term, data: term, delivered_at: term, id: term, method: term, reason: term, retries: term, status: term, timestamp: term, updated_at: term, url: term}} |
+  {:error, <a href="https://hexdocs.pm/ecto/2.2.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>}</pre>
         
       </div>
     
   </div>
   <section class="docstring">
-    <p>Deliver a notification via an HTTP GET request to the given url
-the data will be url-encoded and attached as query string to the url</p>
+    <p>Use this to create the Alods.Record struct which will validate all options given.</p>
 
   </section>
 </div>
-<div class="detail" id="notify_by_post/2">
+<div class="detail" id="update/2">
   
   
   <div class="detail-header">
-    <a href="#notify_by_post/2" class="detail-link" title="Link to this function">
+    <a href="#update/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <span class="signature">notify_by_post(url, data)</span>
+    <span class="signature">update(record, params)</span>
     
     
     
       <div class="specs">
         
-          <pre>notify_by_post(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>, map | list) :: {:ok, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>}</pre>
+          <pre>update(%Alods.Record{created_at: term, data: term, delivered_at: term, id: term, method: term, reason: term, retries: term, status: term, timestamp: term, updated_at: term, url: term}, map) ::
+  {:ok, %Alods.Record{created_at: term, data: term, delivered_at: term, id: term, method: term, reason: term, retries: term, status: term, timestamp: term, updated_at: term, url: term}} |
+  {:error, any}</pre>
         
       </div>
     
   </div>
   <section class="docstring">
-    <p>Deliver a notification via an HTTP POST request to the given url.
-The data will be JSON encoded and be attached to the body</p>
+    <p>Will update a given record</p>
+
+  </section>
+</div>
+<div class="detail" id="update!/2">
+  
+  
+  <div class="detail-header">
+    <a href="#update!/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <span class="signature">update!(record, params)</span>
+    
+    
+    
+      <div class="specs">
+        
+          <pre>update!(%Alods.Record{created_at: term, data: term, delivered_at: term, id: term, method: term, reason: term, retries: term, status: term, timestamp: term, updated_at: term, url: term}, map | list) :: %Alods.Record{created_at: term, data: term, delivered_at: term, id: term, method: term, reason: term, retries: term, status: term, timestamp: term, updated_at: term, url: term}</pre>
+        
+      </div>
+    
+  </div>
+  <section class="docstring">
+    <p>Will Update a given record and raise if validation failed or something else went wrong</p>
 
   </section>
 </div>

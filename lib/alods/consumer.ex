@@ -1,7 +1,7 @@
 defmodule Alods.Consumer do
   @moduledoc """
-  This comsumer will request exactly 1 record from the producer
-  It will then take care of it by posting or getting the notifications to its respective endpoint
+  This comsumer will request exactly 1 record from the producer.
+  It will then take care of it by posting or getting the notifications to its respective endpoint.
   The only acceptable success code is an HTTP status 200
   """
 

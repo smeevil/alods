@@ -7,16 +7,21 @@ defmodule Alods.Delivered do
   use GenServer
   use Alods.DETS, "delivered"
 
+  @spec init(String.t) :: {:ok, nil}
   def init(name) do
-    result = super(name)
+    {:ok, _} = super(name)
 
     _pid = clean_store()
     twenty_four_hours_in_ms = 1000 * 60 * 60 * 24
     {:ok, _ref} = :timer.apply_interval(twenty_four_hours_in_ms, __MODULE__, :clean_store, [])
 
-    result
+    {:ok, nil}
   end
 
+  @doc """
+  Stores the given record, updating the delivred at field, resetting the reason, and setting the status to delivered.
+  After successful storing, it will be deleted from the Queue.
+  """
   @spec store(%Alods.Record{}) :: :ok
   def store(%Alods.Record{} = record) do
     {:ok, record_id} = push(record)

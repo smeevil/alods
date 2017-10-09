@@ -4,13 +4,15 @@ fonts/icomoon.eot
 fonts/icomoon.svg
 fonts/icomoon.ttf
 fonts/icomoon.woff
-dist/sidebar_items-1d3f25363b.js
+dist/sidebar_items-c43b761851.js
 api-reference.html
 search.html
 404.html
 Alods.html
 Alods.Consumer.html
+Alods.DETS.html
+Alods.Delivered.html
 Alods.Producer.html
 Alods.Queue.html
-Alods.Queue.Record.html
+Alods.Record.html
 index.html

@@ -45,6 +45,14 @@ defmodule AlodsTest do
     assert %{delivered: 0, queued: 0} == Alods.queue_sizes()
   end
 
+  test "it can list queued records" do
+    assert [] == Alods.list_queued()
+  end
+
+  test "it can list delivered records" do
+    assert [] == Alods.list_delivered()
+  end
+
   test "it will store a delivered request by post" do
     use_cassette "store_test_post_success" do
       Alods.notify_by_post("http://www.example.com", %{returned: true})

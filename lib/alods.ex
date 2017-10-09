@@ -28,6 +28,18 @@ defmodule Alods do
     }
   end
 
+  @doc """
+  Lists all queued records
+  """
+  @spec list_queued :: [%Alods.Record{}]
+  def list_queued, do: Alods.Queue.list
+
+  @doc """
+  Lists all delivered records
+  """
+  @spec list_delivered :: [%Alods.Record{}]
+  def list_delivered, do: Alods.Delivered.list
+
   defp notify(method, url, data), do: Alods.Queue.push(method, url, data)
 
   #  For demo purpose only, remove me later

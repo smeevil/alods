@@ -21,12 +21,12 @@ defmodule Alods.Queue do
   @doc """
   Pushes a record into the store.
   """
-  @spec push(atom, String.t, map) :: {:ok, String.t} | {:error, any}
-  def push(method, url, data)
-  def push(method, url, data)
+  @spec push(atom, String.t, map | list, function | nil) :: {:ok, String.t} | {:error, any}
+  def push(method, url, data, callback \\ nil)
+  def push(method, url, data, callback)
       when method in @valid_methods and is_map(data) do
 
-    case Alods.Record.create(%{method: method, url: url, data: data}) do
+    case Alods.Record.create(%{method: method, url: url, data: data, callback: callback}) do
       {:ok, record} ->
         case :dets.insert_new(__MODULE__, {record.id, record}) do
           true -> {:ok, record.id}
@@ -35,13 +35,13 @@ defmodule Alods.Queue do
       error -> error
     end
   end
-  def push(method, url, data) when is_list(data) do
-    push(method, url, Enum.into(data, %{}))
+  def push(method, url, data, callback) when is_list(data) do
+    push(method, url, Enum.into(data, %{}), callback)
   end
-  def push(method, _url, data) when is_map(data) do
+  def push(method, _url, data, callback) when is_map(data) do
     {:error, "#{method} is not valid, must be one of #{Enum.join(@valid_methods, ", ")}"}
   end
-  def push(_method, _url, data) when not is_map(data) do
+  def push(_method, _url, data, callback) when not is_map(data) do
     {:error, "data #{inspect data} is not valid, this should be either a map or list"}
   end
 

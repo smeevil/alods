@@ -7,15 +7,15 @@ defmodule Alods do
   Deliver a notification via an HTTP GET request to the given url
   the data will be url-encoded and attached as query string to the url
   """
-  @spec notify_by_get(String.t, map | list) :: {:ok, String.t}
-  def notify_by_get(url, data), do: notify(:get, url, data)
+  @spec notify_by_get(String.t, map | list, function | nil) :: {:ok, String.t}
+  def notify_by_get(url, data, function \\ nil), do: notify(:get, url, data, function)
 
   @doc """
   Deliver a notification via an HTTP POST request to the given url.
   The data will be JSON encoded and be attached to the body
   """
-  @spec notify_by_post(String.t, map | list) :: {:ok, String.t}
-  def notify_by_post(url, data), do: notify(:post, url, data)
+  @spec notify_by_post(String.t, map | list, function | nil) :: {:ok, String.t}
+  def notify_by_post(url, data, function \\ nil), do: notify(:post, url, data, function)
 
   @doc """
   Returns a map with the current queue sizes
@@ -40,9 +40,10 @@ defmodule Alods do
   @spec list_delivered :: [%Alods.Record{}]
   def list_delivered, do: Alods.Delivered.list
 
-  defp notify(method, url, data), do: Alods.Queue.push(method, url, data)
+  @spec notify(atom, String.t, map | list, function | nil) :: {:ok, String.t} | {:error, any}
+  defp notify(method, url, data, function), do: Alods.Queue.push(method, url, data, function)
 
-  #  For demo purpose only, remove me later
+  #  For demo purpose only
   #  def stress do
   #    Enum.each(
   #      0..99,
@@ -52,5 +53,4 @@ defmodule Alods do
   #      end
   #    )
   #  end
-
 end

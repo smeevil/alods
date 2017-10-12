@@ -48,7 +48,7 @@ config :alods,
        consumer_amount: 2, #defaults to 1
        check_for_work_delay: :os.seconds(5), #defaults to 1
        reset_after_processing_in_seconds: 30, #defaults to 60
-       store_delivered_entries_for_days: 1 #defaults to 7   
+       store_delivered_entries_for_days: 1 #defaults to 7
 ```
 
 ## Usage
@@ -71,6 +71,17 @@ To start delivering a notification via the POST method you can use
 ```
 This will make a JSON post to `http://example.com/example/path`
 converting the data to JSON automatically.
+
+### Getting a callback on successful delivery
+If you would like to receive a callback once the delivery was successful
+you can pass a function with an arity of 1 with the calls. Upon
+successful delivery this function will be called with a %Alods.Record{}
+as argument.
+
+```elixir
+  iex> Alods.notify_by_get("http://example.com/example/path", %{foo: "bar", baz: 1, &MyApp.Callback/1})
+  {:ok, "00593e2a-86bd-42cb-bd58-76635e04fbdf"}
+```
 
 ### List Queue
 To see what is currently queued for delivery :
@@ -108,14 +119,14 @@ You can see all delivered notifications by using:
 iex> Alods.Delivered.list()
 [
   %Alods.Record{
-    created_at: #DateTime<2017-10-09 11:25:33.163714Z>, 
+    created_at: #DateTime<2017-10-09 11:25:33.163714Z>,
     data: %{},
     delivered_at: #DateTime<2017-10-09 11:25:33.464013Z>,
-    id: "be39835e-50ff-454e-90e2-cdbbd1dc290d", 
-    method: "get", 
+    id: "be39835e-50ff-454e-90e2-cdbbd1dc290d",
+    method: "get",
     reason: nil,
-    retries: 0, 
-    status: "delivered", 
+    retries: 0,
+    status: "delivered",
     timestamp: 1507548333,
     updated_at: #DateTime<2017-10-09 11:25:33.464034Z>,
     url: "http://example.com"

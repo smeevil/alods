@@ -4,6 +4,7 @@ defmodule Alods.Delivered do
   """
 
   import Ex2ms
+  require Logger
 
   use Alods.DETS, "delivered"
 
@@ -39,6 +40,10 @@ defmodule Alods.Delivered do
     )
     true = :dets.insert_new(__MODULE__, {record.id, record})
     :ok = Alods.Queue.delete(record.id)
+
+    maybe_run_callback(record)
+
+    :ok
   end
 
   def handle_cast({:clean_store}, state) do
@@ -63,4 +68,15 @@ defmodule Alods.Delivered do
       when timestamp <= ^time and status == "delivered" -> record
     end
   end
+
+  defp maybe_run_callback(%Alods.Record{callback: callback} = record) when not is_nil(callback) do
+    try do
+      {function, _} = Code.eval_string(record.callback)
+      function.(record)
+    rescue
+      error -> Logger.warn("Callback function #{record.callback} failed with #{inspect error}")
+    end
+  end
+
+  defp maybe_run_callback(_), do: nil
 end

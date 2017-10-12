@@ -9,6 +9,7 @@ defmodule Alods.Record do
   @primary_key {:id, :binary_id, []}
   embedded_schema do
     field :created_at, :utc_datetime
+    field :callback, Alods.EctoCallback
     field :delivered_at, :utc_datetime
     field :data, :map
     field :method, :string
@@ -21,7 +22,7 @@ defmodule Alods.Record do
   end
 
   @required_fields [:created_at, :data, :id, :method, :status, :timestamp, :url]
-  @optional_fields [:delivered_at, :reason, :retries, :updated_at]
+  @optional_fields [:callback, :delivered_at, :reason, :retries, :updated_at]
 
   @valid_statuses ["delivered", "pending", "processing"]
   @valid_methods ["get", "post"]
@@ -68,8 +69,7 @@ defmodule Alods.Record do
 
   @spec changeset(%Alods.Record{}, map) :: Ecto.Changeset.t
   defp changeset(struct, params) do
-    params = params
-             |> maybe_change_atoms_to_strings
+    params = maybe_change_atoms_to_strings(params)
 
     struct
     |> cast(params, @required_fields ++ @optional_fields)
@@ -122,4 +122,5 @@ defmodule Alods.Record do
       _ -> params
     end
   end
+
 end

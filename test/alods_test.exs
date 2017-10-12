@@ -100,4 +100,15 @@ defmodule AlodsTest do
       assert %{status_code: 404, body: _} = record.reason
     end
   end
+
+  #NOTE this should only show a warning, not raise, no idea how to test it actually did emit the warning without mocking it.
+  test "incorrect callback result" do
+    Alods.notify_by_post("http://www.example.com", %{returned: true}, &IO.puts/1)
+    Alods.Producer.start_link()
+    Alods.ConsumerSupervisor.start_link()
+    :timer.sleep(110)
+    record = List.first(Alods.Delivered.list)
+    refute nil == record.delivered_at
+    assert record.status == "delivered"
+  end
 end

@@ -45,6 +45,9 @@ defmodule Alods.Consumer do
 
   defp construct_url(url) do
     uri = URI.parse(url)
-    (uri.scheme || "http") <> "://" <> uri.host <> (uri.path || "/")
+
+    uri
+    |> Map.put(:path, uri.path || "/")
+    |> URI.to_string
   end
 end

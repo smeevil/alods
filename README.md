@@ -74,7 +74,7 @@ converting the data to JSON automatically.
 
 ### Getting a callback on successful delivery
 If you would like to receive a callback once the delivery was successful
-you can pass a function with an arity of 1 with the calls. Upon
+you can pass a function with an arity of exactly 1 with the calls. Upon
 successful delivery this function will be called with a %Alods.Record{}
 as argument.
 

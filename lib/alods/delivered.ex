@@ -42,7 +42,6 @@ defmodule Alods.Delivered do
   """
   @spec permanent_failure(%Alods.Record{}, map) :: :ok
   def permanent_failure(%Alods.Record{} = record, reason) do
-    IO.puts "reason #{inspect reason}"
     record
     |> Alods.Record.update!(delivered_at: nil, status: :permanent_failure, reason: reason)
     |> insert_and_maybe_run_callback

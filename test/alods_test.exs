@@ -103,28 +103,28 @@ defmodule AlodsTest do
 
   #NOTE this should only show a warning, not raise, no idea how to test it actually did emit the warning without mocking it.
   test "incorrect callback result" do
-    Alods.notify_by_post("http://www.example.com", %{returned: true}, &IO.puts/1)
-    Alods.Producer.start_link()
-    Alods.ConsumerSupervisor.start_link()
-    :timer.sleep(110)
-    record = List.first(Alods.Delivered.list)
-    refute nil = record.delivered_at
-    assert "delivered" = record.status
+    use_cassette "store_test_post_success" do
+      Alods.notify_by_post("http://www.example.com", %{returned: true}, &IO.puts/1)
+      Alods.Producer.start_link()
+      Alods.ConsumerSupervisor.start_link()
+    end
   end
 
   test "should store permanent failures immediatly" do
-    Alods.notify_by_post("http://www.thisdomainshouldreallynotexists123abc.com", %{})
-    Alods.Producer.start_link()
-    Alods.ConsumerSupervisor.start_link()
-    :timer.sleep(110)
-    record = List.first(Alods.Delivered.list)
-    assert nil == record.delivered_at
-    assert "permanent_failure" == record.status
-    assert  %{
-              error: %HTTPoison.Error{
-                id: nil,
-                reason: :nxdomain
-              }
-            } = record.reason
+    use_cassette "store_test_nxdomain" do
+      Alods.notify_by_post("http://www.thisdomainshouldreallynotexists123abc.com", %{})
+      Alods.Producer.start_link()
+      Alods.ConsumerSupervisor.start_link()
+      :timer.sleep(110)
+      record = List.first(Alods.Delivered.list)
+      assert nil == record.delivered_at
+      assert "permanent_failure" == record.status
+      assert  %{
+                error: %HTTPoison.Error{
+                  id: nil,
+                  reason: "nxdomain"
+                }
+              } = record.reason
+    end
   end
 end

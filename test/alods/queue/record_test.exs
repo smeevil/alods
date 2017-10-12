@@ -65,7 +65,7 @@ defmodule Alods.RecordTest do
 
     assert {
              :error,
-             [status: "should be one of delivered, pending, processing"]
+             [status: "should be one of delivered, pending, permanent_failure, processing"]
            } == Alods.Record.update(record, status: :wrong)
 
   end

@@ -43,6 +43,8 @@ defmodule Alods.Consumer do
        do: Alods.Queue.retry_later(record, %{status_code: response.status_code, body: response.body})
   defp handle_response({:error, %HTTPoison.Error{reason: :nxdomain} = reason}, record),
        do: Alods.Delivered.permanent_failure(record, %{error: reason})
+  defp handle_response({:error, %HTTPoison.Error{reason: "nxdomain"} = reason}, record),
+       do: Alods.Delivered.permanent_failure(record, %{error: reason})
   defp handle_response(error, record), do: Alods.Queue.retry_later(record, %{unhandled_error: error})
 
   defp construct_url(url) do

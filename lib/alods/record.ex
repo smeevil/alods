@@ -12,7 +12,7 @@ defmodule Alods.Record do
     field :callback, Alods.EctoCallback
     field :delivered_at, :utc_datetime
     field :data, :map
-    field :method, :string
+    field :method, :string #Alods.EctoAtom
     field :reason, :map
     field :retries, :integer, default: 0
     field :status, :string

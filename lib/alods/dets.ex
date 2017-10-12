@@ -93,7 +93,10 @@ defmodule Alods.DETS do
         end
         path = File.cwd! <> "/priv"
         unless File.exists?(path), do: File.mkdir_p!(path)
-        to_charlist(path <> "/alods_#{name}_#{env}.ets")
+        file = path <> "/alods_#{name}_#{env}.ets"
+        #DETS is not receiving a shutdown properly in test, we can remove the files and start fresh to prevent repair messages.
+        if env == :test, do: File.rm!(file)
+        to_charlist(file)
       end
 
     end

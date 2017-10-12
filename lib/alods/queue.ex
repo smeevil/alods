@@ -38,10 +38,10 @@ defmodule Alods.Queue do
   def push(method, url, data, callback) when is_list(data) do
     push(method, url, Enum.into(data, %{}), callback)
   end
-  def push(method, _url, data, callback) when is_map(data) do
+  def push(method, _url, data, _callback) when is_map(data) do
     {:error, "#{method} is not valid, must be one of #{Enum.join(@valid_methods, ", ")}"}
   end
-  def push(_method, _url, data, callback) when not is_map(data) do
+  def push(_method, _url, data, _callback) when not is_map(data) do
     {:error, "data #{inspect data} is not valid, this should be either a map or list"}
   end
 

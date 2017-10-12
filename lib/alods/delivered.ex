@@ -29,21 +29,23 @@ defmodule Alods.Delivered do
   Stores the given record, updating the delivred at field, resetting the reason, and setting the status to delivered.
   After successful storing, it will be deleted from the Queue.
   """
-  @spec store(%Alods.Record{}) :: :ok
-  def store(%Alods.Record{} = record) do
-    record = Alods.Record.update!(
-      record,
-      delivered_at: DateTime.utc_now,
-      status: :delivered,
-      reason: nil,
-      timestamp: :os.system_time(:seconds)
-    )
-    true = :dets.insert_new(__MODULE__, {record.id, record})
-    :ok = Alods.Queue.delete(record.id)
+  @spec success(%Alods.Record{}) :: :ok
+  def success(%Alods.Record{} = record) do
+    record
+    |> Alods.Record.update!(delivered_at: DateTime.utc_now, status: :delivered, reason: nil)
+    |> insert_and_maybe_run_callback
+  end
 
-    maybe_run_callback(record)
-
-    :ok
+  @doc """
+  Stores the given record and sets the status to permanent failure.
+  After successful storing, it will be deleted from the Queue.
+  """
+  @spec permanent_failure(%Alods.Record{}, map) :: :ok
+  def permanent_failure(%Alods.Record{} = record, reason) do
+    IO.puts "reason #{inspect reason}"
+    record
+    |> Alods.Record.update!(delivered_at: nil, status: :permanent_failure, reason: reason)
+    |> insert_and_maybe_run_callback
   end
 
   def handle_cast({:clean_store}, state) do
@@ -79,4 +81,12 @@ defmodule Alods.Delivered do
   end
 
   defp maybe_run_callback(_), do: nil
+
+  defp insert_and_maybe_run_callback(record) do
+    true = :dets.insert_new(__MODULE__, {record.id, record})
+    :ok = Alods.Queue.delete(record.id)
+
+    maybe_run_callback(record)
+    :ok
+  end
 end

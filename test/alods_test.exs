@@ -108,7 +108,23 @@ defmodule AlodsTest do
     Alods.ConsumerSupervisor.start_link()
     :timer.sleep(110)
     record = List.first(Alods.Delivered.list)
-    refute nil == record.delivered_at
-    assert record.status == "delivered"
+    refute nil = record.delivered_at
+    assert "delivered" = record.status
+  end
+
+  test "should store permanent failures immediatly" do
+    Alods.notify_by_post("http://www.thisdomainshouldreallynotexists123abc.com", %{})
+    Alods.Producer.start_link()
+    Alods.ConsumerSupervisor.start_link()
+    :timer.sleep(110)
+    record = List.first(Alods.Delivered.list)
+    assert nil == record.delivered_at
+    assert "permanent_failure" == record.status
+    assert  %{
+              error: %HTTPoison.Error{
+                id: nil,
+                reason: :nxdomain
+              }
+            } = record.reason
   end
 end

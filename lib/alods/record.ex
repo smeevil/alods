@@ -24,7 +24,7 @@ defmodule Alods.Record do
   @required_fields [:created_at, :data, :id, :method, :status, :timestamp, :url]
   @optional_fields [:callback, :delivered_at, :reason, :retries, :updated_at]
 
-  @valid_statuses ["delivered", "pending", "processing"]
+  @valid_statuses ["delivered", "pending", "permanent_failure", "processing"]
   @valid_methods ["get", "post"]
   @valid_protocols ["http", "https"]
 

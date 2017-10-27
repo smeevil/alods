@@ -35,14 +35,6 @@ defmodule Alods.QueueTest do
     assert 1 = Alods.Queue.size
   end
 
-  test "it will throw an error when the data argument is not a map or list" do
-    assert {:error, "data \"this=wrong\" is not valid, this should be either a map or list"} = Alods.Queue.push(
-             :put,
-             "http://www.example.com/callback",
-             "this=wrong"
-           )
-  end
-
   test "it will not store a PUT entry" do
     assert  {:error, "put is not valid, must be one of get, post"} = Alods.Queue.push(
               :put,
@@ -120,9 +112,9 @@ defmodule Alods.QueueTest do
     assert {
              :ok,
              %Alods.Record{
-               data: %{
+               data: {:json, %{
                  returned: true
-               },
+               }},
                id: ^id,
                method: "get",
                status: "pending",

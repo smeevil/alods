@@ -24,7 +24,7 @@ defmodule Alods.Queue do
   @spec push(atom, String.t, map | list, function | nil) :: {:ok, String.t} | {:error, any}
   def push(method, url, data, callback \\ nil)
   def push(method, url, data, callback)
-      when method in @valid_methods and is_map(data) do
+      when method in @valid_methods and is_map(data) or is_tuple(data) do
 
     case Alods.Record.create(%{method: method, url: url, data: data, callback: callback}) do
       {:ok, record} ->
@@ -41,8 +41,9 @@ defmodule Alods.Queue do
   def push(method, _url, data, _callback) when is_map(data) do
     {:error, "#{method} is not valid, must be one of #{Enum.join(@valid_methods, ", ")}"}
   end
-  def push(_method, _url, data, _callback) when not is_map(data) do
-    {:error, "data #{inspect data} is not valid, this should be either a map or list"}
+  def push(method, url, data, callback) when is_binary(data) do
+    push(method, url, {:raw, data}, callback)
+    #    {:error, "data #{inspect data} is not valid, this should be either a map or list"}
   end
 
   def get_work do

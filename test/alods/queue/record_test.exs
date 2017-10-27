@@ -12,14 +12,40 @@ defmodule Alods.RecordTest do
            } == Alods.Record.create()
   end
 
-  test "it createds a record struct" do
+  test "it createds a record struct with raw data" do
     assert {
              :ok,
              %Alods.Record{
                created_at: created_at,
-               data: %{
+               data: {:raw, "maybe: true"},
+               id: record_id,
+               reason: nil,
+               method: "post",
+               retries: 0,
+               status: "pending",
+               timestamp: timestamp,
+               updated_at: nil,
+               url: "http://www.example.com/callback"
+             }
+           } = Alods.Record.create(
+             method: :post,
+             url: "http://www.example.com/callback",
+             data: "maybe: true"
+           )
+
+    assert nil != record_id
+    assert nil != created_at
+    assert nil != timestamp
+  end
+
+  test "it createds a record struct with json" do
+    assert {
+             :ok,
+             %Alods.Record{
+               created_at: created_at,
+               data: {:json, %{
                  maybe: true
-               },
+               }},
                id: record_id,
                reason: nil,
                method: "post",
@@ -35,6 +61,32 @@ defmodule Alods.RecordTest do
              data: %{
                maybe: true
              }
+           )
+
+    assert nil != record_id
+    assert nil != created_at
+    assert nil != timestamp
+  end
+
+  test "it createds a record struct with xml" do
+    assert {
+             :ok,
+             %Alods.Record{
+               created_at: created_at,
+               data: {:xml, "<root><foo>bar</foo></root>"},
+               id: record_id,
+               reason: nil,
+               method: "post",
+               retries: 0,
+               status: "pending",
+               timestamp: timestamp,
+               updated_at: nil,
+               url: "http://www.example.com/callback"
+             }
+           } = Alods.Record.create(
+             method: :post,
+             url: "http://www.example.com/callback",
+             data: {:xml, "<root><foo>bar</foo></root>"}
            )
 
     assert nil != record_id

@@ -64,13 +64,39 @@ this will convert the path to
 `http://example.com/example/path?foo=bar&baz=1`
 
 ### Notication delivery via POST
-To start delivering a notification via the POST method you can use
+
+## posting JSON
+To start delivering a json notification via the POST method you can use
 ```elixir
   iex> Alods.notify_by_post("http://example.com/example/path", %{foo: "bar", baz: 1})
   {:ok, "00593e2a-86bd-42cb-bd58-76635e04fbdf"}
 ```
 This will make a JSON post to `http://example.com/example/path`
-converting the data to JSON automatically.
+converting the data map to JSON automatically and setting the appropriate application/JSON header.
+
+## posting Raw
+If you literally would like to post `%{foo: "bar", baz: 1}` or any other raw data then pass it as a tuple like:
+
+```elixir
+  iex> Alods.notify_by_post("http://example.com/example/path", {:raw, %{foo: "bar", baz: 1}})
+  {:ok, "00593e2a-86bd-42cb-bd58-76635e04fbdf"}
+```
+This will post the raw data as body and set the application/x-www-form-urlencoded header.
+
+## posting XML
+
+To start delivering a xml notification via POST then pass the xml string as a tuple like:
+
+```elixir
+  iex> Alods.notify_by_post("http://example.com/example/path", {:xml, "<root><foo>bar</foo></root>})
+  {:ok, "00593e2a-86bd-42cb-bd58-76635e04fbdf"}
+```
+This will post the xml string as body and set the application/xml header.
+
+## using basic auth
+
+If you need to use Basic authentication then use an url like `http://user:pass@example.com/path`
+this will automatically set the Authentication header.
 
 ### Getting a callback on successful delivery
 If you would like to receive a callback once the delivery was successful

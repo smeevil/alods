@@ -11,7 +11,7 @@ defmodule Alods.Record do
     field :created_at, :utc_datetime
     field :callback, Alods.EctoCallback
     field :delivered_at, :utc_datetime
-    field :data, :map
+    field :data, Alods.EctoMapOrTuple
     field :method, :string #Alods.EctoAtom
     field :reason, :map
     field :retries, :integer, default: 0

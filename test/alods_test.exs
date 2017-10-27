@@ -65,6 +65,67 @@ defmodule AlodsTest do
     end
   end
 
+  test "it will post raw form data" do
+    use_cassette "post_raw_form_data_success" do
+      Alods.notify_by_post("http://www.example.com", "returned=true")
+      Alods.Producer.start_link()
+      Alods.ConsumerSupervisor.start_link()
+      :timer.sleep(110)
+      record = List.first(Alods.Delivered.list)
+      refute nil == record.delivered_at
+      assert record.status == "delivered"
+    end
+  end
+
+  test "it will post raw map data" do
+    use_cassette "post_raw_map_data_success" do
+      Alods.notify_by_post("http://www.example.com", {:raw, %{returned: true}})
+      Alods.Producer.start_link()
+      Alods.ConsumerSupervisor.start_link()
+      :timer.sleep(2000)
+      record = List.first(Alods.Delivered.list)
+      refute nil == record.delivered_at
+      assert record.status == "delivered"
+    end
+  end
+
+  test "it will post json data" do
+    use_cassette "post_json_data_success" do
+      Alods.notify_by_post("http://www.example.com", {:json, %{returned: true}})
+      Alods.Producer.start_link()
+      Alods.ConsumerSupervisor.start_link()
+      :timer.sleep(110)
+      record = List.first(Alods.Delivered.list)
+      refute nil == record.delivered_at
+      assert record.status == "delivered"
+    end
+  end
+
+  test "it will post xml data" do
+    use_cassette "post_xml_data_success" do
+      Alods.notify_by_post("http://www.example.com", {:xml, "<root><foo>bar</foo></root>"})
+      Alods.Producer.start_link()
+      Alods.ConsumerSupervisor.start_link()
+      :timer.sleep(110)
+      record = List.first(Alods.Delivered.list)
+      refute nil == record.delivered_at
+      assert record.status == "delivered"
+    end
+  end
+
+
+  test "it will post json data with basic authorization " do
+    use_cassette "post_json_data_with_authorization_success" do
+      Alods.notify_by_post("http://user:pass@www.example.com", %{returned: true})
+      Alods.Producer.start_link()
+      Alods.ConsumerSupervisor.start_link()
+      :timer.sleep(110)
+      record = List.first(Alods.Delivered.list)
+      refute nil == record.delivered_at
+      assert record.status == "delivered"
+    end
+  end
+
 
   test "it will retry a failed request by get" do
     use_cassette "store_test_get_failure" do

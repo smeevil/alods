@@ -7,7 +7,7 @@ defmodule Alods do
   Deliver a notification via an HTTP GET request to the given url
   the data will be url-encoded and attached as query string to the url
   """
-  @spec notify_by_get(String.t, map | list, function | nil) :: {:ok, String.t}
+  @spec notify_by_get(String.t, map | list | nil, function | nil) :: {:ok, String.t}
   def notify_by_get(url, data, function \\ nil), do: notify(:get, url, data, function)
 
   @doc """

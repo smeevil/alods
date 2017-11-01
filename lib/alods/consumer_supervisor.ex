@@ -14,11 +14,6 @@ defmodule Alods.ConsumerSupervisor do
 
   defp gen_consumers(amount) do
     import Supervisor.Spec, warn: false
-    Enum.map(
-      (1..amount),
-      fn i ->
-        worker(Alods.Consumer, [], id: i)
-      end
-    )
+    Enum.map((1..amount), &worker(Alods.Consumer, [], id: &1))
   end
 end

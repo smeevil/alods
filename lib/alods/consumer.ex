@@ -22,7 +22,7 @@ defmodule Alods.Consumer do
 
   defp process(%Alods.Record{method: "get", data: {:json, data}} = record) do
     record.url
-    |> construct_url
+    |> ensure_path
     |> Kernel.<>("?")
     |> Kernel.<>(URI.encode_query(data))
     |> HTTPoison.get
@@ -33,13 +33,14 @@ defmodule Alods.Consumer do
     data = maybe_encode_data(record.data)
 
     record.url
-    |> construct_url
+    |> ensure_path
     |> HTTPoison.post(data, headers_for(record))
     |> handle_response(record)
   end
 
   defp headers_for(%Alods.Record{data: data, url: url}) do
     headers = [{"Content-Type", content_type_for_data(data)}]
+
     case URI.parse(url) do
       %URI{userinfo: nil} -> headers
       %URI{userinfo: user_pass} -> [{"Authorization", "Basic #{Base.encode64(user_pass)}"} | headers]
@@ -63,7 +64,7 @@ defmodule Alods.Consumer do
        do: Alods.Delivered.permanent_failure(record, %{error: error})
   defp handle_response(error, record), do: Alods.Queue.retry_later(record, %{unhandled_error: error})
 
-  defp construct_url(url) do
+  defp ensure_path(url) do
     uri = URI.parse(url)
 
     uri

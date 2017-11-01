@@ -49,6 +49,7 @@ defmodule Alods.Delivered do
 
   def handle_cast({:clean_store}, state) do
     query = select_processing_longer_than_days(Application.get_env(:alods, :store_delivered_entries_for_days, 7))
+
     __MODULE__
     |> :dets.select(query)
     |> Enum.each(fn {_id, record} -> delete(record) end)

@@ -6,7 +6,7 @@ defmodule Alods.EctoCallback do
     {:ok, quoted} = Code.string_to_quoted(Macro.to_string(callback))
     case quoted do
       {:&, _, [{_, _, [{{_, _, [{_, _, module}, function]}, _, _}, 1]}]} -> check_function(callback, module, function)
-      other -> :error
+      _ -> :error
     end
   end
   def cast(_), do: :error

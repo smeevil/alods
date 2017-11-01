@@ -21,7 +21,7 @@ defmodule Alods.Queue do
   @doc """
   Pushes a record into the store.
   """
-  @spec push(atom, String.t, map | list, function | nil) :: {:ok, String.t} | {:error, any}
+  @spec push(atom, String.t, map | list | tuple, function | nil) :: {:ok, String.t} | {:error, any}
   def push(method, url, data, callback \\ nil)
   def push(method, url, data, callback)
       when method in @valid_methods and is_map(data) or is_tuple(data) do

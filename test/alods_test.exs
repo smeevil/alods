@@ -16,7 +16,7 @@ defmodule AlodsTest do
 
   test "it will store a delivered request by get" do
     use_cassette "store_test_get_success" do
-      Alods.notify_by_get("http://www.example.com", %{returned: true})
+      {:ok, _} = Alods.notify_by_get("http://www.example.com", %{returned: true})
       assert 1 = Alods.Queue.size
       record = List.first(Alods.Queue.list)
       assert nil == record.delivered_at
@@ -55,7 +55,7 @@ defmodule AlodsTest do
 
   test "it will store a delivered request by post" do
     use_cassette "store_test_post_success" do
-      Alods.notify_by_post("http://www.example.com", %{returned: true})
+      {:ok, _} = Alods.notify_by_post("http://www.example.com", %{returned: true})
       Alods.Producer.start_link()
       Alods.ConsumerSupervisor.start_link()
       :timer.sleep(110)
@@ -67,7 +67,7 @@ defmodule AlodsTest do
 
   test "it will post raw form data" do
     use_cassette "post_raw_form_data_success" do
-      Alods.notify_by_post("http://www.example.com", "returned=true")
+      {:ok, _} = Alods.notify_by_post("http://www.example.com", "returned=true")
       Alods.Producer.start_link()
       Alods.ConsumerSupervisor.start_link()
       :timer.sleep(110)
@@ -79,7 +79,7 @@ defmodule AlodsTest do
 
   test "it will post raw map data" do
     use_cassette "post_raw_map_data_success" do
-      Alods.notify_by_post("http://www.example.com", {:raw, %{returned: true}})
+      {:ok, _} = Alods.notify_by_post("http://www.example.com", {:raw, %{returned: true}})
       Alods.Producer.start_link()
       Alods.ConsumerSupervisor.start_link()
       :timer.sleep(2000)
@@ -91,7 +91,7 @@ defmodule AlodsTest do
 
   test "it will post json data" do
     use_cassette "post_json_data_success" do
-      Alods.notify_by_post("http://www.example.com", {:json, %{returned: true}})
+      {:ok, _} = Alods.notify_by_post("http://www.example.com", {:json, %{returned: true}})
       Alods.Producer.start_link()
       Alods.ConsumerSupervisor.start_link()
       :timer.sleep(110)
@@ -103,7 +103,7 @@ defmodule AlodsTest do
 
   test "it will post xml data" do
     use_cassette "post_xml_data_success" do
-      Alods.notify_by_post("http://www.example.com", {:xml, "<root><foo>bar</foo></root>"})
+      {:ok, _} = Alods.notify_by_post("http://www.example.com", {:xml, "<root><foo>bar</foo></root>"})
       Alods.Producer.start_link()
       Alods.ConsumerSupervisor.start_link()
       :timer.sleep(110)
@@ -116,7 +116,7 @@ defmodule AlodsTest do
 
   test "it will post json data with basic authorization " do
     use_cassette "post_json_data_with_authorization_success" do
-      Alods.notify_by_post("http://user:pass@www.example.com", %{returned: true})
+      {:ok, _} = Alods.notify_by_post("http://user:pass@www.example.com", %{returned: true})
       Alods.Producer.start_link()
       Alods.ConsumerSupervisor.start_link()
       :timer.sleep(110)
@@ -129,7 +129,7 @@ defmodule AlodsTest do
 
   test "it will retry a failed request by get" do
     use_cassette "store_test_get_failure" do
-      Alods.notify_by_get("http://www.example.com/404", %{returned: true})
+      {:ok, _} = Alods.notify_by_get("http://www.example.com/404", %{returned: true})
       assert 1 = Alods.Queue.size
       record = List.first(Alods.Queue.list)
       assert nil == record.delivered_at
@@ -151,7 +151,7 @@ defmodule AlodsTest do
 
   test "it will retry a failed request by post" do
     use_cassette "store_test_post_failure" do
-      Alods.notify_by_get("http://www.example.com/404", %{returned: true})
+      {:ok, _} = Alods.notify_by_get("http://www.example.com/404", %{returned: true})
       Alods.Producer.start_link()
       Alods.ConsumerSupervisor.start_link()
       :timer.sleep(110)
@@ -162,18 +162,29 @@ defmodule AlodsTest do
     end
   end
 
-  #NOTE this should only show a warning, not raise, no idea how to test it actually did emit the warning without mocking it.
-  test "incorrect callback result" do
+  test "correct callback result" do
     use_cassette "store_test_post_success" do
-      Alods.notify_by_post("http://www.example.com", %{returned: true}, &IO.puts/1)
+      {:ok, _} = Alods.notify_by_post("http://www.example.com", %{returned: true}, &IO.puts/1)
       Alods.Producer.start_link()
       Alods.ConsumerSupervisor.start_link()
     end
   end
 
+  #NOTE this should only show a warning, not raise, no idea how to test it actually did emit the warning without mocking it.
+  test "incorrect callback result" do
+    use_cassette "store_test_post_success" do
+      {:ok, _} = Alods.notify_by_post("http://www.example.com", %{returned: true}, &IO.puts/1)
+      assert 0 = Alods.Delivered.size
+      Alods.Producer.start_link()
+      Alods.ConsumerSupervisor.start_link()
+      :timer.sleep(110)
+      assert 1 = Alods.Delivered.size
+    end
+  end
+
   test "should store permanent failures immediatly" do
     use_cassette "store_test_nxdomain" do
-      Alods.notify_by_post("http://www.thisdomainshouldreallynotexists123abc.com", %{})
+      {:ok, _} = Alods.notify_by_post("http://www.thisdomainshouldreallynotexists123abc.com", %{})
       Alods.Producer.start_link()
       Alods.ConsumerSupervisor.start_link()
       :timer.sleep(110)

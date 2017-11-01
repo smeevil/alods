@@ -78,7 +78,6 @@ defmodule Alods.Delivered do
       error -> Logger.warn("Callback function #{record.callback} failed with #{inspect error}")
     end
   end
-
   defp maybe_run_callback(_), do: nil
 
   defp insert_and_maybe_run_callback(record) do

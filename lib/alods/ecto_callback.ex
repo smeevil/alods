@@ -1,4 +1,8 @@
 defmodule Alods.EctoCallback do
+  @moduledoc """
+  This module extents ecto to support a field that can store and validate a function callback.
+  """
+
   @behaviour Ecto.Type
   def type, do: :string
 

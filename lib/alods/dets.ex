@@ -25,9 +25,7 @@ defmodule Alods.DETS do
       end
       defoverridable [init: 1]
 
-      #TODO seems not to trigger for mix test, in IEX when running :init.stop it works fine...how can we tacle this
       def terminate(_reason, _status) do
-        IO.puts "Closing DETS"
         :ok = :dets.close(__MODULE__)
         :normal
       end

@@ -1,4 +1,8 @@
 defmodule Alods.EctoMapOrTuple do
+  @moduledoc """
+  This module extents ecto to support a field that can either be a map or tuple.
+  """
+
   @behaviour Ecto.Type
   def type, do: :string
 

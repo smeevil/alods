@@ -71,12 +71,10 @@ defmodule Alods.Delivered do
   end
 
   defp maybe_run_callback(%Alods.Record{callback: callback} = record) when not is_nil(callback) do
-    try do
-      {function, _} = Code.eval_string(record.callback)
-      function.(record)
-    rescue
-      error -> Logger.warn("Callback function #{record.callback} failed with #{inspect error}")
-    end
+    {function, _} = Code.eval_string(record.callback)
+    function.(record)
+  rescue
+    error -> Logger.warn("Callback function #{record.callback} failed with #{inspect error}")
   end
   defp maybe_run_callback(_), do: nil
 

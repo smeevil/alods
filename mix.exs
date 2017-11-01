@@ -10,7 +10,7 @@ defmodule Alods.Mixfile do
       deps: deps(),
       dialyzer: [
         plt_add_deps: true,
-        ignore_warnings: "dialyzer.ignore-warnings",
+        ignore_warnings: ".dialyzer_ignore",
         flags: [
           :error_handling,
           :race_conditions,
